@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="在庫ボード">
+  <rect width="192" height="192" fill="#0f6f6a"/>
+  <g fill="none" stroke="#dff0ed" stroke-width="9" stroke-linecap="round">
+    <path d="M58 76h76"/>
+    <path d="M58 102h76"/>
+    <path d="M58 128h76"/>
+  </g>
+  <g fill="#dff0ed">
+    <rect x="66" y="58" width="18" height="18" rx="3"/>
+    <rect x="92" y="62" width="24" height="14" rx="3"/>
+    <rect x="66" y="86" width="26" height="16" rx="3"/>
+    <rect x="102" y="82" width="18" height="20" rx="3"/>
+    <rect x="66" y="112" width="20" height="16" rx="3"/>
+  </g>
+  <circle cx="126" cy="126" r="12" fill="#c1372c"/>
+</svg>

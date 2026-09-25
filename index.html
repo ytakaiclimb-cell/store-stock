@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f6f6a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="在庫ボード">
+<meta name="robots" content="noindex,nofollow">
+<title>店舗の在庫ボード</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* ---------- tokens ---------- */
+:root{
+  color-scheme: light;
+  --bg:#eef2f1;
+  --surface:#ffffff;
+  --surface-2:#f5f8f7;
+  --surface-3:#e6edeb;
+  --line:#dbe4e2;
+  --line-2:#c2cfcc;
+  --ink:#101a19;
+  --ink-2:#4c5a58;
+  --ink-3:#7b8a87;
+  --accent:#0f6f6a;
+  --accent-ink:#0b5450;
+  --accent-soft:#dff0ed;
+  --crit:#c1372c;      /* 欠品 */
+  --crit-soft:#fbe7e4;
+  --warn:#c07208;      /* 発注どき */
+  --warn-soft:#fbeed9;
+  --over:#4f7391;      /* 多い */
+  --over-soft:#e4ecf3;
+  --calm:#7b8a87;      /* 適正 */
+  --r:12px;
+  --r-s:8px;
+  --shadow:0 1px 2px rgba(16,26,25,.05), 0 12px 32px -24px rgba(16,26,25,.55);
+  --font:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono","Zen Kaku Gothic New",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0b1211; --surface:#151d1c; --surface-2:#1a2322; --surface-3:#212c2a;
+    --line:#243030; --line-2:#374644;
+    --ink:#ecf2f1; --ink-2:#a6b4b1; --ink-3:#7b8a87;
+    --accent:#4bb3ab; --accent-ink:#7fd0c9; --accent-soft:#12302e;
+    --crit:#e8756a; --crit-soft:#331a18;
+    --warn:#e2a03f; --warn-soft:#312512;
+    --over:#8fb0cc; --over-soft:#1a2530;
+    --calm:#7b8a87;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -24px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0b1211; --surface:#151d1c; --surface-2:#1a2322; --surface-3:#212c2a;
+  --line:#243030; --line-2:#374644;
+  --ink:#ecf2f1; --ink-2:#a6b4b1; --ink-3:#7b8a87;
+  --accent:#4bb3ab; --accent-ink:#7fd0c9; --accent-soft:#12302e;
+  --crit:#e8756a; --crit-soft:#331a18;
+  --warn:#e2a03f; --warn-soft:#312512;
+  --over:#8fb0cc; --over-soft:#1a2530;
+  --calm:#7b8a87;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -24px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:700;line-height:1.35}
+p{margin:0}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.wrap{max-width:1000px;margin:0 auto;padding:16px 16px 96px}
+header.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{max-width:1000px;margin:0 auto;padding:12px 16px 0;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand h1{font-size:18px;letter-spacing:.02em}
+.brand .sub{color:var(--ink-3);font-size:11px;letter-spacing:.14em;font-family:var(--mono);text-transform:uppercase}
+.spacer{flex:1}
+.seg{display:inline-flex;background:var(--surface-3);border-radius:999px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{border:0;background:transparent;padding:10px 12px 11px;font-size:14px;font-weight:500;color:var(--ink-3);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:700}
+nav.tabs .count{font-family:var(--mono);font-size:11px;border-radius:999px;padding:1px 6px;margin-left:5px;background:var(--surface-3);color:var(--ink-2)}
+nav.tabs .count.alert{background:var(--crit-soft);color:var(--crit)}
+
+/* ---------- pieces ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sec-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:22px 0 10px}
+.sec-head h2{font-size:15px}
+.sec-head .note{font-size:12.5px;color:var(--ink-3)}
+.muted{color:var(--ink-3);font-size:12.5px}
+.banner{max-width:1000px;margin:12px auto 0;padding:0 16px}
+.banner .in{background:var(--accent-soft);border:1px solid var(--line);border-radius:var(--r-s);padding:9px 13px;font-size:12.5px;color:var(--accent-ink);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:7px 15px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.primary:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink-3)}
+.btn.ghost:hover{background:var(--surface-3);color:var(--ink)}
+.btn.sm{padding:4px 11px;font-size:12.5px}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-s);padding:8px 10px;font-size:14px;width:100%}
+textarea{resize:vertical;line-height:1.6}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-2);font-weight:500}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);font-weight:600}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:700;letter-spacing:.02em}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.over{background:var(--over-soft);color:var(--over)}
+.pill.ok{background:var(--surface-3);color:var(--calm)}
+
+/* ---------- summary strip ---------- */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.strip div{background:var(--surface);padding:12px 14px}
+.strip .k{font-size:11.5px;color:var(--ink-3);letter-spacing:.04em}
+.strip .v{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1.25}
+.strip .v small{font-size:12px;font-weight:500;color:var(--ink-3);margin-left:2px;font-family:var(--font)}
+.strip .v.crit{color:var(--crit)}
+.strip .v.warn{color:var(--warn)}
+@media(max-width:640px){.strip{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- stock list ---------- */
+.list{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.it{display:grid;grid-template-columns:3px 1fr auto;gap:0;border-bottom:1px solid var(--line)}
+.it:last-child{border-bottom:0}
+.it .stripe{background:transparent}
+.it.s-out .stripe{background:var(--crit)}
+.it.s-low .stripe{background:var(--warn)}
+.it.s-over .stripe{background:var(--over)}
+.it .main{padding:11px 12px;min-width:0}
+.it .nm{font-weight:700;font-size:14.5px;line-height:1.4;overflow-wrap:anywhere}
+.it .meta{font-size:11.5px;color:var(--ink-3);display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:1px}
+.it .meta .dot{color:var(--line-2)}
+.it .side{padding:11px 12px 11px 4px;display:flex;align-items:center;gap:10px}
+.it .qty{text-align:right;min-width:74px}
+.it .qty b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:21px;font-weight:600;line-height:1.15;display:block}
+.it .qty span{font-size:11px;color:var(--ink-3)}
+.it .acts{display:flex;gap:5px}
+.it .iq{border:1px solid var(--line-2);background:var(--surface-2);width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;line-height:1;display:grid;place-items:center;color:var(--ink-2)}
+.it .iq:hover{background:var(--surface-3);color:var(--ink)}
+@media(max-width:520px){
+  .it{grid-template-columns:3px 1fr}
+  .it .side{grid-column:2;padding:0 12px 11px;justify-content:space-between}
+}
+.empty{padding:34px 18px;text-align:center;color:var(--ink-3);font-size:13.5px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11.5px;color:var(--ink-3);font-weight:600;letter-spacing:.03em;background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.w{white-space:normal;min-width:180px}
+tfoot td{font-weight:700;background:var(--surface-2);border-top:1px solid var(--line-2)}
+
+/* ---------- 棚卸 ---------- */
+.ct{display:grid;grid-template-columns:1fr 92px 92px;gap:8px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line)}
+.ct:last-child{border-bottom:0}
+.ct .th{font-size:11.5px;color:var(--ink-3);text-align:right}
+.ct input{text-align:right;font-family:var(--mono);font-size:16px;padding:7px 9px}
+.ct .theo{text-align:right;font-family:var(--mono);color:var(--ink-2)}
+.ct .diff{font-family:var(--mono);font-size:11.5px;text-align:right}
+.ct .diff.minus{color:var(--crit)}
+.ct .diff.plus{color:var(--over)}
+.ctw{border-bottom:1px solid var(--line)}
+.ctw:last-child{border-bottom:0}
+.ctw .ct{border-bottom:0}
+.why{display:none;padding:0 12px 11px;gap:6px;align-items:center;flex-wrap:wrap}
+.why.on{display:flex}
+.why .lb{font-size:11.5px;color:var(--warn);font-weight:600;white-space:nowrap}
+.why select{width:auto;min-width:132px;font-size:13px;padding:6px 8px}
+.why input{flex:1;min-width:150px;font-size:13px;padding:6px 9px}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(10,18,17,.45);display:grid;place-items:end center;padding:0}
+@media(min-width:620px){.modal{place-items:center;padding:20px}}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 0 0;width:100%;max-width:520px;max-height:90vh;overflow:auto;box-shadow:var(--shadow)}
+@media(min-width:620px){.sheet{border-radius:var(--r)}}
+.sheet .hd{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;gap:10px;z-index:1}
+.sheet .hd h3{font-size:15px}
+.sheet .bd{padding:16px;display:flex;flex-direction:column;gap:12px}
+.sheet .ft{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:8px;justify-content:flex-end}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kinds{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.kinds button{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-s);padding:9px;font-size:13.5px;cursor:pointer;font-weight:500}
+.kinds button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);font-weight:700}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{border:1px solid var(--line-2);background:var(--surface-2);width:42px;height:42px;border-radius:var(--r-s);font-size:19px;cursor:pointer;line-height:1}
+.stepper input{text-align:center;font-family:var(--mono);font-size:20px;font-weight:600;padding:9px}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:80;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+#toast div{background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px;font-weight:500;box-shadow:var(--shadow)}
+.help{font-size:13px;color:var(--ink-2);line-height:1.85}
+.help b{color:var(--ink)}
+.help ol{margin:6px 0 0;padding-left:1.3em}
+.help li{margin-bottom:4px}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <h1>店舗の在庫ボード</h1>
+      <span class="sub">stock</span>
+      <span class="spacer"></span>
+      <div class="seg" id="storeSeg" role="group" aria-label="店舗の切り替え"></div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </div>
+</header>
+<div class="banner" id="banner"></div>
+<main class="wrap" id="view"></main>
+<div id="toast" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   店舗の在庫ボード
+   保存先: Supabase（store-ops-board の stock_docs テーブル）。合言葉は x-stock-key ヘッダで送る。
+   在庫数 = 最新の棚卸の数 ＋ それ以降の入出庫の合計
+   ============================================================ */
+
+/* ---------- 小道具 ---------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = v => { const n = Number(v); return isFinite(n) ? n : 0; };
+const fmt = n => (Math.round(num(n) * 100) / 100).toLocaleString("ja-JP");
+const yen = n => "¥" + Math.round(num(n)).toLocaleString("ja-JP");
+const nowISO = () => new Date().toISOString();
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const dayLabel = iso => { const d = new Date(iso); return isNaN(d) ? "-" : (d.getMonth() + 1) + "/" + d.getDate(); };
+const stampLabel = iso => {
+  const d = new Date(iso); if (isNaN(d)) return "-";
+  const p = n => String(n).padStart(2, "0");
+  return (d.getMonth() + 1) + "/" + d.getDate() + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+};
+
+/* localStorage はブラウザの設定で使えないことがあるので、必ず包んで使う */
+const LS = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 保存できない環境 */ } }
+};
+
+function toast(msg) {
+  const t = document.createElement("div");
+  t.textContent = msg;
+  $("#toast").appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+/* ---------- 状態 ---------- */
+const KINDS = {
+  in:     { label: "入荷",       sign: +1, verb: "入荷を記録" },
+  out:    { label: "使用・出庫", sign: -1, verb: "使用を記録" },
+  waste:  { label: "廃棄・破損", sign: -1, verb: "廃棄を記録" },
+  back:   { label: "戻し・返品", sign: +1, verb: "戻しを記録" }
+};
+/* chain: true の店舗は、POS の全店集計を読むだけの欄。入出庫も棚卸もしない */
+const DEFAULT_STORES = [
+  { id: "funabashi", name: "船橋" },
+  { id: "yachiyo", name: "八千代" },
+  { id: "chain", name: "全店", chain: true }
+];
+/* 保存されている店舗一覧を整える。全店の欄が無ければ足す */
+function normalizeStores(list) {
+  const out = (list && list.length ? list : DEFAULT_STORES).map(s => ({
+    id: s.id, name: s.name, hidden: !!s.hidden, chain: s.id === "chain"
+  }));
+  if (!out.some(s => s.id === "chain")) out.push({ id: "chain", name: "全店", hidden: false, chain: true });
+  return out;
+}
+const visibleStores = () => {
+  const v = S.settings.stores.filter(s => !s.hidden);
+  return v.length ? v : S.settings.stores;
+};
+const isChain = () => S.store === "chain";
+const realStores = () => S.settings.stores.filter(s => !s.chain);
+const DEFAULT_CATS = ["物販", "消耗品・備品", "レンタル品"];
+
+const S = {
+  ready: false, sample: false, cloud: false,
+  items: [], moves: [], counts: [],
+  settings: { stores: DEFAULT_STORES, categories: DEFAULT_CATS },
+  chain: [], chainAt: "", posref: {}, posrefList: [], posrefLoose: {},
+  store: LS.get("sb.store") || "funabashi",
+  tab: "stock",
+  q: "", cat: "", filter: "active", countAll: false,
+  who: LS.get("sb.who") || "",
+  stock: {}, lastCount: {}
+};
+
+
+/* ---------- サンプル（本物のデータが1件も無いときだけ表示） ---------- */
+const SAMPLE = [
+  ["液体チョーク 250ml", "funabashi", "物販", "本", 4, 12, 780, 1400, "ROCK商事", 6],
+  ["チョークボール 詰め替え用", "funabashi", "物販", "個", 5, 15, 620, 1100, "ROCK商事", 3],
+  ["フィンガーテープ 13mm", "funabashi", "物販", "巻", 10, 30, 180, 350, "ROCK商事", 22],
+  ["スポーツドリンク 500ml", "funabashi", "物販", "本", 12, 48, 88, 180, "アズマ商会", 0],
+  ["店舗ロゴTシャツ M", "funabashi", "物販", "枚", 3, 8, 1200, 2800, "本部発注", 9],
+  ["ペーパータオル 200枚", "funabashi", "消耗品・備品", "束", 6, 20, 210, 0, "アズマ商会", 4],
+  ["アルコール詰替 1L", "funabashi", "消耗品・備品", "本", 2, 6, 640, 0, "アズマ商会", 2],
+  ["ゴミ袋 45L 100枚", "funabashi", "消耗品・備品", "箱", 2, 5, 980, 0, "アズマ商会", 3],
+  ["レジロール 58mm", "funabashi", "消耗品・備品", "巻", 5, 15, 45, 0, "本部発注", 8],
+  ["ホールド洗浄ブラシ", "funabashi", "消耗品・備品", "本", 3, 8, 520, 0, "ROCK商事", 5],
+  ["レンタルシューズ 25.0cm", "funabashi", "レンタル品", "足", 4, 6, 4800, 0, "本部発注", 4],
+  ["レンタルシューズ 27.0cm", "funabashi", "レンタル品", "足", 3, 5, 4800, 0, "本部発注", 2],
+  ["レンタルチョークバッグ", "funabashi", "レンタル品", "個", 6, 15, 1500, 0, "本部発注", 11],
+  ["液体チョーク 250ml", "yachiyo", "物販", "本", 4, 12, 780, 1400, "ROCK商事", 2],
+  ["スポーツドリンク 500ml", "yachiyo", "物販", "本", 12, 48, 88, 180, "アズマ商会", 30],
+  ["ペーパータオル 200枚", "yachiyo", "消耗品・備品", "束", 6, 20, 210, 0, "アズマ商会", 11],
+  ["レンタルシューズ 24.0cm", "yachiyo", "レンタル品", "足", 4, 6, 4800, 0, "本部発注", 3]
+].map((r, i) => ({
+  id: "sample" + i, name: r[0], store: r[1], category: r[2], unit: r[3],
+  minQty: r[4], parQty: r[5], cost: r[6], price: r[7], supplier: r[8], _qty: r[9],
+  note: "", archived: false, createdAt: nowISO()
+}));
+const SAMPLE_MOVES = [
+  { id: "sm1", itemId: "sample3", store: "funabashi", kind: "out", qty: 24, at: new Date(Date.now() - 36e5 * 20).toISOString(), memo: "土曜の売上ぶん", by: "" },
+  { id: "sm2", itemId: "sample0", store: "funabashi", kind: "in", qty: 12, at: new Date(Date.now() - 36e5 * 44).toISOString(), memo: "ROCK商事 納品", by: "" },
+  { id: "sm3", itemId: "sample11", store: "funabashi", kind: "waste", qty: 1, at: new Date(Date.now() - 36e5 * 70).toISOString(), memo: "ソール剥がれ", by: "" }
+];
+
+/* ---------- データ層（Supabase） ---------- */
+const SB_URL = "https://ftyyyxvejzhkhgwgomsl.supabase.co";
+const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eXl5eHZlanpoa2hnd2dvbXNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MjM1OTMsImV4cCI6MjEwMzA5OTU5M30.VZZIhwZysy822ho_dAYNBB2Ak_nCc5YAxCC9noyJX_Q";
+let APPKEY = "";
+
+function sbHeaders(extra) {
+  return Object.assign({
+    apikey: SB_ANON,
+    Authorization: "Bearer " + SB_ANON,
+    "x-stock-key": APPKEY,
+    "Content-Type": "application/json"
+  }, extra || {});
+}
+async function sbSelect(collection) {
+  const r = await fetch(SB_URL + "/rest/v1/stock_docs?select=id,data&collection=eq." + encodeURIComponent(collection), { headers: sbHeaders() });
+  if (!r.ok) throw new Error("読み込みに失敗しました (" + r.status + ")");
+  return (await r.json()).map(x => Object.assign({ id: x.id }, x.data));
+}
+async function sbUpsert(collection, id, data) {
+  const r = await fetch(SB_URL + "/rest/v1/stock_docs", {
+    method: "POST",
+    headers: sbHeaders({ Prefer: "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify([{ collection: collection, id: id, data: data }])
+  });
+  if (!r.ok) throw new Error("保存に失敗しました (" + r.status + ")");
+}
+async function sbDelete(collection, id) {
+  const q = "?collection=eq." + encodeURIComponent(collection) + "&id=eq." + encodeURIComponent(id);
+  const r = await fetch(SB_URL + "/rest/v1/stock_docs" + q, { method: "DELETE", headers: sbHeaders() });
+  if (!r.ok) throw new Error("削除に失敗しました (" + r.status + ")");
+}
+
+async function put(col, doc) {
+  const rec = Object.assign({}, doc);
+  const id = rec.id || uid();
+  delete rec.id;
+  await sbUpsert(col, id, rec);
+  const arr = S[col];
+  const i = arr.findIndex(x => x.id === id);
+  const full = Object.assign({ id: id }, rec);
+  if (i < 0) arr.push(full); else arr[i] = full;
+  apply();
+  return id;
+}
+async function del(col, id) {
+  await sbDelete(col, id);
+  S[col] = S[col].filter(x => x.id !== id);
+  apply();
+}
+async function saveSettings() {
+  await sbUpsert("meta", "settings", { stores: S.settings.stores, categories: S.settings.categories });
+}
+
+/* 全店とPOSの参照表は大きいので、使うときだけ読み込む */
+async function ensureChain() {
+  if (S.chain.length) return;
+  const parts = (await sbSelect("chain")).sort((x, y) => num(x.seq) - num(y.seq));
+  let rows = [];
+  for (const p of parts) { if (Array.isArray(p.rows)) rows = rows.concat(p.rows); if (p.at) S.chainAt = p.at; }
+  S.chain = rows; apply();
+}
+async function ensurePosref() {
+  if (S.posrefList.length) return;
+  const parts = (await sbSelect("posref")).sort((x, y) => num(x.seq) - num(y.seq));
+  const m = {}, list = [];
+  for (const p of parts) if (Array.isArray(p.rows)) for (const r of p.rows) { m[normName(r[0])] = r; list.push(r); }
+  S.posref = m; S.posrefList = list;
+  S.posrefLoose = uniqueBy(list, r => looseKey(r[0]));
+  apply();
+}
+
+/* ---------- 起動 ---------- */
+async function reloadAll() {
+  const [items, counts, moves, meta] = await Promise.all([
+    sbSelect("items"), sbSelect("counts"), sbSelect("moves"), sbSelect("meta")
+  ]);
+  S.items = items; S.counts = counts; S.moves = moves;
+  const st = meta.find(x => x.id === "settings");
+  if (st) S.settings = { stores: normalizeStores(st.stores), categories: st.categories || DEFAULT_CATS };
+  S.cloud = true; S.ready = true;
+  apply();
+}
+function askKey(msg) {
+  const body = '<p class="muted">このアプリを開くには合言葉が要ります。お店で決めた合言葉を入れてください。' +
+    "一度入れれば、この端末では次から聞かれません。</p>" +
+    '<label class="f">合言葉<input type="password" id="akKey" autocomplete="current-password"></label>' +
+    (msg ? '<p class="muted" style="color:var(--crit)">' + esc(msg) + "</p>" : "");
+  const el = openModal("合言葉を入れてください", body, '<button class="btn primary" data-act="useKey">開く</button>');
+  const inp = $("#akKey", el);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") $('[data-act="useKey"]', el).click(); });
+  inp.focus();
+}
+async function boot() {
+  APPKEY = LS.get("sb.key") || "";
+  render();
+  if (!APPKEY) { askKey(); return; }
+  try { await reloadAll(); }
+  catch (e) { APPKEY = ""; LS.set("sb.key", ""); askKey("合言葉が違うか、つながりませんでした。"); }
+}
+/* 他の端末の変更を拾うため、戻ってきたときと1分おきに読み直す */
+const refresh = () => { if (!document.hidden && APPKEY && S.ready && !modalEl) reloadAll().catch(() => {}); };
+setInterval(refresh, 60000);
+document.addEventListener("visibilitychange", refresh);
+
+/* ---------- 集計 ---------- */
+function baseItems() { return S.items.filter(i => !i.archived); }
+function activeItems() { return S.sample ? SAMPLE : baseItems(); }
+function activeMoves() { return S.sample ? SAMPLE_MOVES : S.moves; }
+
+function recompute() {
+  S.sample = S.ready && S.items.length === 0;
+  S.lastCount = {}; S.stock = {}; S.touched = {};
+  for (const c of S.counts) S.touched[c.itemId] = true;
+  for (const m of S.moves) S.touched[m.itemId] = true;
+  for (const c of S.counts) {
+    const p = S.lastCount[c.itemId];
+    if (!p || String(c.at) > String(p.at)) S.lastCount[c.itemId] = c;
+  }
+  for (const it of activeItems()) {
+    if (S.sample) { S.stock[it.id] = it._qty; continue; }
+    const c = S.lastCount[it.id];
+    let q = c ? num(c.qty) : 0;
+    const since = c ? String(c.at) : "";
+    for (const m of S.moves) {
+      if (m.itemId !== it.id) continue;
+      if (since && String(m.at) <= since) continue;
+      const k = KINDS[m.kind]; if (!k) continue;
+      q += k.sign * num(m.qty);
+    }
+    S.stock[it.id] = q;
+  }
+}
+const stockOf = it => num(S.stock[it.id]);
+/* 在庫金額の単価。仕入値が入っていればそれ、無ければ売価を使う */
+const unitValue = it => num(it.cost) || num(it.price);
+function valueBasis() {
+  const list = activeItems();
+  const hasCost = list.some(i => num(i.cost) > 0);
+  const hasPrice = list.some(i => !num(i.cost) && num(i.price) > 0);
+  return hasCost && hasPrice ? "仕入値・売価" : hasCost ? "仕入値" : "売価";
+}
+/* 棚卸も入出庫も一度も記録していない商品（POSに登録だけある商品）は「未使用」。
+   在庫0でも欠品としては扱わず、発注リストにも出さない。発注点を入れれば見張り始める */
+const tracked = it => S.sample || !!S.touched[it.id];
+function statusOf(it) {
+  const q = stockOf(it), min = num(it.minQty), par = num(it.parQty);
+  if (q <= 0 && min <= 0 && !tracked(it)) return "idle";
+  if (q <= 0) return "out";
+  if (min > 0 && q <= min) return "low";
+  if (par > 0 && q > par * 1.6) return "over";
+  return "ok";
+}
+const STATUS_LABEL = { out: "欠品", low: "発注どき", over: "多い", ok: "適正", idle: "未使用" };
+const STATUS_ORDER = { out: 0, low: 1, over: 2, ok: 3, idle: 4 };
+
+function storeItems() {
+  return activeItems().filter(i => i.store === S.store)
+    .sort((a, b) => (STATUS_ORDER[statusOf(a)] - STATUS_ORDER[statusOf(b)])
+      || String(a.category || "").localeCompare(String(b.category || ""), "ja")
+      || String(a.name).localeCompare(String(b.name), "ja"));
+}
+function visibleItems() {
+  const q = S.q.trim();
+  return storeItems().filter(i => {
+    if (S.cat && i.category !== S.cat) return false;
+    if (S.filter === "need" && !(statusOf(i) === "out" || statusOf(i) === "low")) return false;
+    if (S.filter === "active" && statusOf(i) === "idle") return false;
+    if (q && !(String(i.name) + " " + String(i.supplier || "") + " " + String(i.category || "")).includes(q)) return false;
+    return true;
+  });
+}
+function categories() {
+  if (isChain()) return [...new Set(S.chain.map(r => r[1]).filter(Boolean))];
+  const set = new Set(S.settings.categories || []);
+  activeItems().forEach(i => { if (i.category) set.add(i.category); });
+  return [...set];
+}
+function suppliers() {
+  const set = new Set();
+  activeItems().forEach(i => { if (i.supplier) set.add(i.supplier); });
+  return [...set].sort((a, b) => a.localeCompare(b, "ja"));
+}
+const storeName = id => (S.settings.stores.find(s => s.id === id) || { name: id }).name;
+const itemById = id => activeItems().find(i => i.id === id) || S.items.find(i => i.id === id);
+function orderQty(it) {
+  const q = stockOf(it), par = num(it.parQty), min = num(it.minQty);
+  const target = par > 0 ? par : (min > 0 ? min * 2 : q + 1);
+  return Math.max(1, Math.ceil(target - q));
+}
+function needList() {
+  return storeItems().filter(i => { const s = statusOf(i); return s === "out" || s === "low"; });
+}
+
+/* ---------- 画面 ---------- */
+const TABS = [
+  ["stock", "在庫"], ["move", "入出庫"], ["count", "棚卸"],
+  ["order", "発注"], ["items", "商品"], ["settings", "設定"]
+];
+
+function apply() { recompute(); render(); }
+
+function render() {
+  // 店舗切り替え（設定で隠した店舗は出さない）
+  const shown = visibleStores();
+  if (!shown.some(s => s.id === S.store)) S.store = shown[0].id;
+  $("#storeSeg").innerHTML = shown.map(s =>
+    '<button data-act="store" data-id="' + esc(s.id) + '" aria-pressed="' + (s.id === S.store) + '">' + esc(s.name) + "</button>"
+  ).join("");
+  // タブ
+  const need = needList().length;
+  $("#tabs").innerHTML = TABS.map(([id, label]) => {
+    const badge = id === "order" && need ? '<span class="count alert">' + need + "</span>" : "";
+    return '<button role="tab" data-act="tab" data-id="' + id + '" aria-selected="' + (id === S.tab) + '">' + label + badge + "</button>";
+  }).join("");
+  // お知らせ
+  const notes = [];
+  if (S.sample) notes.push("サンプルを表示しています。「商品」タブで最初の1件を登録すると、この表示は消えます（サンプルは保存されていません）。");
+  else if (S.ready && !S.cloud) notes.push("つながっていません。電波の良いところで開き直してください。");
+  $("#banner").innerHTML = notes.length ? '<div class="in">' + notes.map(esc).join("") + "</div>" : "";
+
+  const v = $("#view");
+  const views = isChain()
+    ? { stock: viewChain, items: viewChain, move: chainNote, count: chainNote, order: chainNote, settings: viewSettings }
+    : { stock: viewStock, move: viewMove, count: viewCount, order: viewOrder, items: viewItems, settings: viewSettings };
+  v.innerHTML = (views[S.tab] || views.stock)();
+}
+
+/* ---------- 在庫 ---------- */
+function viewStock() {
+  const all = storeItems(), vis = visibleItems();
+  const out = all.filter(i => statusOf(i) === "out").length;
+  const low = all.filter(i => statusOf(i) === "low").length;
+  const value = all.reduce((a, i) => a + stockOf(i) * unitValue(i), 0);
+  const cats = categories();
+
+  const strip = '<div class="strip">' +
+    '<div><div class="k">欠品</div><div class="v ' + (out ? "crit" : "") + '">' + out + '<small>件</small></div></div>' +
+    '<div><div class="k">発注どき</div><div class="v ' + (low ? "warn" : "") + '">' + low + '<small>件</small></div></div>' +
+    '<div><div class="k">取扱中の品目</div><div class="v">' + all.filter(i => statusOf(i) !== "idle").length + '<small>件 / 全' + all.length + '</small></div></div>' +
+    '<div><div class="k">在庫金額（' + esc(valueBasis()) + '）</div><div class="v">' + esc(yen(value)) + "</div></div>" +
+    "</div>";
+
+  const controls = '<div class="row" style="margin-top:14px">' +
+    '<input type="text" id="q" placeholder="商品名・仕入先で探す" value="' + esc(S.q) + '" style="flex:1;min-width:180px">' +
+    '<button class="chip" data-act="filter" data-id="active" aria-pressed="' + (S.filter === "active") + '">取扱中</button>' +
+    '<button class="chip" data-act="filter" data-id="need" aria-pressed="' + (S.filter === "need") + '">要チェック</button>' +
+    '<button class="chip" data-act="filter" data-id="all" aria-pressed="' + (S.filter === "all") + '">すべて</button>' +
+    "</div>" +
+    '<div class="chips" style="margin-top:8px">' +
+    '<button class="chip" data-act="cat" data-id="" aria-pressed="' + (S.cat === "") + '">全カテゴリ</button>' +
+    cats.map(c => '<button class="chip" data-act="cat" data-id="' + esc(c) + '" aria-pressed="' + (S.cat === c) + '">' + esc(c) + "</button>").join("") +
+    "</div>";
+
+  const rows = vis.length ? vis.map(itemRow).join("") :
+    '<div class="empty">' + (all.length ? "条件に合う商品がありません。" : "この店舗の商品はまだありません。「商品」タブから登録できます。") + "</div>";
+
+  return strip + controls +
+    '<div class="sec-head"><h2>' + esc(storeName(S.store)) + "の在庫</h2>" +
+    '<span class="note">' + vis.length + " 件を表示</span><span class=\"spacer\"></span>" +
+    '<button class="btn sm" data-act="newItem">商品を追加</button></div>' +
+    '<div class="list">' + rows + "</div>" +
+    '<p class="muted" style="margin-top:10px">在庫数は「最新の棚卸の数」に「そのあとの入出庫」を足したものです。ズレたら棚卸で合わせます。</p>';
+}
+
+function itemRow(it) {
+  const st = statusOf(it), q = stockOf(it);
+  const cls = (st === "ok" || st === "idle") ? "" : "s-" + st;
+  const meta = [it.category, it.supplier, num(it.minQty) > 0 ? "発注点 " + fmt(it.minQty) : ""].filter(Boolean);
+  return '<div class="it ' + cls + '">' +
+    '<div class="stripe"></div>' +
+    '<div class="main"><div class="nm">' + esc(it.name) + "</div>" +
+    '<div class="meta">' + meta.map(esc).join('<span class="dot">/</span>') +
+    (st === "ok" ? "" : ' <span class="pill ' + (st === "out" ? "crit" : st === "low" ? "warn" : st === "over" ? "over" : "ok") + '">' + STATUS_LABEL[st] + "</span>") +
+    "</div></div>" +
+    '<div class="side">' +
+    '<div class="qty"><b>' + esc(fmt(q)) + "</b><span>" + esc(it.unit || "個") + "</span></div>" +
+    '<div class="acts">' +
+    '<button class="iq" data-act="quick" data-id="' + esc(it.id) + '" data-kind="out" title="使用・出庫を記録">−</button>' +
+    '<button class="iq" data-act="quick" data-id="' + esc(it.id) + '" data-kind="in" title="入荷を記録">＋</button>' +
+    '<button class="btn sm" data-act="detail" data-id="' + esc(it.id) + '">詳細</button>' +
+    "</div></div></div>";
+}
+
+/* ---------- 全店（読むだけ） ----------
+   1行 = [商品名, カテゴリ, 単位, 在庫数, 単価, ブランド, 販売数] */
+const CHAIN_MAX = 400;
+function chainRows() {
+  const q = S.q.trim();
+  return S.chain.filter(r =>
+    (!S.cat || r[1] === S.cat) &&
+    (!q || String(r[0]).includes(q) || String(r[5] || "").includes(q))
+  ).sort((a, b) => num(b[3]) - num(a[3]) || String(a[0]).localeCompare(String(b[0]), "ja"));
+}
+function viewChain() {
+  if (!S.chain.length) {
+    return '<div class="card"><h2 style="font-size:15px">全店</h2>' +
+      '<div class="empty">全店のデータがまだ入っていません。</div></div>';
+  }
+  const all = S.chain;
+  const hit = chainRows();
+  const shown = hit.slice(0, CHAIN_MAX);
+  const inStock = all.filter(r => num(r[3]) > 0).length;
+  const value = all.reduce((a, r) => a + Math.max(num(r[3]), 0) * num(r[4]), 0);
+  const cats = categories();
+
+  const strip = '<div class="strip">' +
+    '<div><div class="k">商品数</div><div class="v">' + fmt(all.length) + '<small>件</small></div></div>' +
+    '<div><div class="k">在庫がある</div><div class="v">' + fmt(inStock) + '<small>件</small></div></div>' +
+    '<div><div class="k">在庫金額（売価）</div><div class="v">' + esc(yen(value)) + "</div></div>" +
+    '<div><div class="k">取り込んだ日</div><div class="v" style="font-size:16px">' + esc(S.chainAt ? stampLabel(S.chainAt) : "-") + "</div></div>" +
+    "</div>";
+
+  const controls = '<div class="row" style="margin-top:14px">' +
+    '<input type="text" id="q" placeholder="商品名・ブランドで探す" value="' + esc(S.q) + '" style="flex:1;min-width:180px">' +
+    '<button class="btn" data-act="csvChain">CSVで書き出す</button></div>' +
+    '<div class="chips" style="margin-top:8px">' +
+    '<button class="chip" data-act="cat" data-id="" aria-pressed="' + (S.cat === "") + '">全カテゴリ</button>' +
+    cats.map(c => '<button class="chip" data-act="cat" data-id="' + esc(c) + '" aria-pressed="' + (S.cat === c) + '">' + esc(c) + "</button>").join("") +
+    "</div>";
+
+  const rows = shown.length ? shown.map(r =>
+    '<div class="it">' +
+    '<div class="stripe"></div>' +
+    '<div class="main"><div class="nm">' + esc(r[0]) + "</div>" +
+    '<div class="meta">' + [r[1], r[5], num(r[6]) ? "この期間に " + fmt(r[6]) + " 売れた" : ""].filter(Boolean).map(esc).join('<span class="dot">/</span>') + "</div></div>" +
+    '<div class="side"><div class="qty"><b>' + esc(fmt(r[3])) + "</b><span>" + esc(r[2] || "個") + "</span></div>" +
+    '<div class="muted" style="min-width:74px;text-align:right">' + esc(num(r[4]) ? yen(r[4]) : "") + "</div></div></div>"
+  ).join("") : '<div class="empty">条件に合う商品がありません。</div>';
+
+  return '<div class="banner" style="padding:0;margin:0 0 6px"><div class="in">チェーン25店舗の合計です。POS から取り込んだ数字を見るだけの欄で、入出庫や棚卸はできません。</div></div>' +
+    strip + controls +
+    '<div class="sec-head"><h2>全店の在庫</h2><span class="note">' +
+    fmt(hit.length) + " 件" + (hit.length > shown.length ? "（在庫の多い順に " + CHAIN_MAX + " 件を表示）" : "") + "</span></div>" +
+    '<div class="list">' + rows + "</div>" +
+    '<p class="muted" style="margin-top:10px">この欄が要らないときは、設定の「上に出す店舗」から外せます。</p>';
+}
+function chainNote() {
+  return '<div class="card"><h2 style="font-size:15px;margin-bottom:8px">全店では使えません</h2>' +
+    '<p class="muted">「全店」はチェーン合計をPOSから取り込んで<b>見るだけ</b>の欄です。' +
+    "入出庫・棚卸・発注・商品の登録は、船橋か八千代に切り替えてから行ってください。</p>" +
+    '<div class="row" style="margin-top:12px">' +
+    realStores().map(s => '<button class="btn" data-act="store" data-id="' + esc(s.id) + '">' + esc(s.name) + "に切り替える</button>").join("") +
+    "</div></div>";
+}
+
+/* ---------- 入出庫 ---------- */
+function viewMove() {
+  const recent = activeMoves().filter(m => m.store === S.store)
+    .slice().sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 40);
+  const rows = recent.length ? recent.map(m => {
+    const it = itemById(m.itemId), k = KINDS[m.kind] || { label: m.kind, sign: 1 };
+    const d = (k.sign > 0 ? "+" : "−") + fmt(m.qty);
+    return "<tr><td class=\"n\" style=\"color:var(--ink-3)\">" + esc(stampLabel(m.at)) + "</td>" +
+      '<td class="w">' + esc(it ? it.name : "（削除された商品）") + "</td>" +
+      "<td>" + esc(k.label) + "</td>" +
+      '<td class="n" style="color:' + (k.sign > 0 ? "var(--accent)" : "var(--crit)") + '">' + esc(d) + "</td>" +
+      '<td class="w" style="color:var(--ink-3)">' + esc([m.memo, m.by].filter(Boolean).join(" / ")) + "</td>" +
+      '<td><button class="btn sm ghost" data-act="delMove" data-id="' + esc(m.id) + '">取消</button></td></tr>';
+  }).join("") : '<tr><td colspan="6" class="w" style="color:var(--ink-3)">まだ記録がありません。</td></tr>';
+
+  return '<div class="card"><h2 style="font-size:15px;margin-bottom:10px">入荷・使用を記録する</h2>' +
+    '<p class="muted" style="margin-bottom:12px">届いた・使った・捨てた、をその場で1件ずつ。あとから棚卸で数を合わせられます。</p>' +
+    '<div class="row"><button class="btn primary" data-act="quick" data-kind="in">入荷を記録</button>' +
+    '<button class="btn" data-act="quick" data-kind="out">使用・出庫を記録</button>' +
+    '<button class="btn" data-act="quick" data-kind="waste">廃棄・破損を記録</button>' +
+    '<button class="btn" data-act="quick" data-kind="back">戻し・返品を記録</button></div></div>' +
+    '<div class="sec-head"><h2>最近の記録</h2><span class="note">' + esc(storeName(S.store)) + " / 新しい順に40件</span></div>" +
+    '<div class="tw"><table><thead><tr><th class="n">日時</th><th>商品</th><th>種別</th><th class="n">数</th><th>メモ</th><th></th></tr></thead>' +
+    "<tbody>" + rows + "</tbody></table></div>";
+}
+
+/* ---------- 棚卸 ---------- */
+/* 帳簿とズレたときに選べる理由。〇 のところは差の数で埋める */
+const REASONS = [
+  ["", "理由を選ぶ…"],
+  ["miss", "〇〇と打ち間違い"],
+  ["prize", "〇個景品化"],
+  ["supply", "〇個備品化"],
+  ["roll", "他店舗ローリング"],
+  ["unknown", "原因不明"]
+];
+function reasonText(kind, diff) {
+  const n = fmt(Math.abs(diff));
+  if (kind === "miss") return "〇〇と打ち間違い";
+  if (kind === "prize") return n + "個景品化";
+  if (kind === "supply") return n + "個備品化";
+  if (kind === "roll") return "他店舗ローリング";
+  if (kind === "unknown") return "原因不明";
+  return "";
+}
+function viewCount() {
+  const list = storeItems().filter(i => (!S.cat || i.category === S.cat) && (S.countAll || statusOf(i) !== "idle"));
+  const cats = categories();
+  const last = Object.values(S.lastCount).filter(c => c.store === S.store)
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)))[0];
+
+  const rows = list.map(it =>
+    '<div class="ctw">' +
+    '<div class="ct" data-count-row="' + esc(it.id) + '">' +
+    "<div><div style=\"font-weight:600;font-size:14px\">" + esc(it.name) + "</div>" +
+    '<div class="muted">' + esc(it.category || "") + " / " + esc(it.unit || "個") + "</div></div>" +
+    '<div class="theo">' + esc(fmt(stockOf(it))) + '<div class="muted" style="font-size:11px">帳簿</div></div>' +
+    '<div><input type="number" inputmode="decimal" step="any" data-count="' + esc(it.id) + '" placeholder="実数" aria-label="' + esc(it.name) + 'の実数">' +
+    '<div class="diff" data-diff="' + esc(it.id) + '"></div></div>' +
+    "</div>" +
+    '<div class="why" data-why="' + esc(it.id) + '">' +
+    '<span class="lb">ズレの理由</span>' +
+    '<select data-reason="' + esc(it.id) + '" aria-label="' + esc(it.name) + 'のズレの理由">' +
+    REASONS.map(r => '<option value="' + esc(r[0]) + '">' + esc(r[1]) + "</option>").join("") +
+    "</select>" +
+    '<input type="text" data-note="' + esc(it.id) + '" placeholder="備考（そのままPOSの備考欄に入ります）">' +
+    "</div></div>"
+  ).join("");
+
+  return '<div class="card"><h2 style="font-size:15px;margin-bottom:8px">棚卸</h2>' +
+    '<p class="muted">数えた実数を入れて、いちばん下の「棚卸を保存」を押します。空欄の商品はそのままです。' +
+    (last ? "前回の棚卸は " + esc(stampLabel(last.at)) + "。" : "この店舗ではまだ棚卸をしていません。") + "</p>" +
+    '<div class="chips" style="margin-top:10px">' +
+    '<button class="chip" data-act="cat" data-id="" aria-pressed="' + (S.cat === "") + '">全カテゴリ</button>' +
+    cats.map(c => '<button class="chip" data-act="cat" data-id="' + esc(c) + '" aria-pressed="' + (S.cat === c) + '">' + esc(c) + "</button>").join("") +
+    '<button class="chip" data-act="countAll" aria-pressed="' + S.countAll + '">未使用の商品も出す</button>' +
+    "</div></div>" +
+    '<div class="sec-head"><h2>' + esc(storeName(S.store)) + " " + (S.cat ? esc(S.cat) : "全品") + "</h2><span class=\"note\">" + list.length + " 件</span></div>" +
+    (list.length ? '<div class="list"><div class="ct" style="background:var(--surface-2)"><div class="muted">商品</div><div class="th">帳簿</div><div class="th">実数</div></div>' + rows + "</div>" : '<div class="empty">商品がありません。</div>') +
+    '<div class="card" style="margin-top:14px">' +
+    '<label class="row" style="gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="prune" style="width:auto"> 棚卸より前の入出庫の記録を消す（在庫数は変わりません。保存できる件数を節約できます）</label>' +
+    '<div class="row" style="margin-top:12px"><button class="btn primary" data-act="saveCount">棚卸を保存</button>' +
+    '<button class="btn" data-act="exportPos">POSの形式で書き出す</button>' +
+    '<span class="muted" id="countSummary">入力した商品だけが保存されます。</span></div></div>';
+}
+
+/* ---------- 発注 ---------- */
+function viewOrder() {
+  const need = needList();
+  const groups = {};
+  need.forEach(i => { const k = i.supplier || "仕入先なし"; (groups[k] = groups[k] || []).push(i); });
+  const keys = Object.keys(groups).sort((a, b) => a.localeCompare(b, "ja"));
+  const total = need.reduce((a, i) => a + orderQty(i) * unitValue(i), 0);
+
+  if (!need.length) {
+    return '<div class="card"><h2 style="font-size:15px">発注リスト</h2>' +
+      '<div class="empty">いま発注が必要な商品はありません。<br><span class="muted">在庫が発注点を下回ると、ここに並びます。</span></div></div>';
+  }
+
+  const blocks = keys.map(k => {
+    const rows = groups[k].map(i =>
+      "<tr><td class=\"w\">" + esc(i.name) + (statusOf(i) === "out" ? ' <span class="pill crit">欠品</span>' : "") + "</td>" +
+      '<td class="n">' + esc(fmt(stockOf(i))) + "</td>" +
+      '<td class="n">' + esc(fmt(i.minQty)) + "</td>" +
+      '<td class="n"><b>' + esc(fmt(orderQty(i))) + "</b> " + esc(i.unit || "個") + "</td>" +
+      '<td class="n">' + esc(unitValue(i) ? yen(orderQty(i) * unitValue(i)) : "-") + "</td>" +
+      '<td><button class="btn sm" data-act="quick" data-id="' + esc(i.id) + '" data-kind="in">入荷を記録</button></td></tr>'
+    ).join("");
+    const sub = groups[k].reduce((a, i) => a + orderQty(i) * unitValue(i), 0);
+    return '<div class="sec-head"><h2>' + esc(k) + '</h2><span class="note">' + groups[k].length + " 件 / " + esc(yen(sub)) + "</span></div>" +
+      '<div class="tw"><table><thead><tr><th>商品</th><th class="n">在庫</th><th class="n">発注点</th><th class="n">発注数の目安</th><th class="n">金額</th><th></th></tr></thead><tbody>' +
+      rows + "</tbody></table></div>";
+  }).join("");
+
+  return '<div class="card"><div class="row"><div><h2 style="font-size:15px">発注リスト</h2>' +
+    '<p class="muted">在庫が発注点以下の商品です。目安の数は「適正在庫 − いまの在庫」。</p></div>' +
+    '<span class="spacer"></span>' +
+    '<button class="btn" data-act="copyOrder">文字でコピー</button>' +
+    '<button class="btn primary" data-act="csvOrder">CSVで書き出す</button></div>' +
+    '<div class="strip" style="margin-top:14px"><div><div class="k">発注が要る品目</div><div class="v crit">' + need.length + '<small>件</small></div></div>' +
+    '<div><div class="k">うち欠品</div><div class="v">' + need.filter(i => statusOf(i) === "out").length + '<small>件</small></div></div>' +
+    '<div><div class="k">仕入先</div><div class="v">' + keys.length + '<small>先</small></div></div>' +
+    '<div><div class="k">概算の仕入額</div><div class="v">' + esc(yen(total)) + "</div></div></div></div>" + blocks;
+}
+
+function orderText() {
+  const need = needList();
+  const lines = [storeName(S.store) + " 発注リスト（" + new Date().toLocaleDateString("ja-JP") + "）"];
+  const groups = {};
+  need.forEach(i => { const k = i.supplier || "仕入先なし"; (groups[k] = groups[k] || []).push(i); });
+  Object.keys(groups).sort((a, b) => a.localeCompare(b, "ja")).forEach(k => {
+    lines.push("", "【" + k + "】");
+    groups[k].forEach(i => lines.push("・" + i.name + "  " + orderQty(i) + (i.unit || "個") + "（在庫 " + fmt(stockOf(i)) + "）"));
+  });
+  return lines.join("\n");
+}
+
+/* ---------- 商品 ---------- */
+function viewItems() {
+  const list = storeItems();
+  const rows = list.length ? list.map(i =>
+    "<tr><td class=\"w\">" + esc(i.name) + "</td><td>" + esc(i.category || "-") + "</td>" +
+    '<td class="n">' + esc(fmt(stockOf(i))) + "</td><td>" + esc(i.unit || "個") + "</td>" +
+    '<td class="n">' + esc(fmt(i.minQty)) + '</td><td class="n">' + esc(fmt(i.parQty)) + "</td>" +
+    '<td class="n">' + esc(num(i.cost) ? yen(i.cost) : "-") + '</td><td class="n">' + esc(num(i.price) ? yen(i.price) : "-") + "</td>" +
+    "<td>" + esc(i.supplier || "-") + "</td>" +
+    '<td><button class="btn sm" data-act="edit" data-id="' + esc(i.id) + '">編集</button></td></tr>'
+  ).join("") : '<tr><td colspan="10" class="w" style="color:var(--ink-3)">まだ商品がありません。</td></tr>';
+
+  return '<div class="card"><div class="row"><div><h2 style="font-size:15px">商品リスト</h2>' +
+    '<p class="muted">' + esc(storeName(S.store)) + "の登録商品。発注点を入れておくと、減ったときに教えてくれます。</p></div>" +
+    '<span class="spacer"></span><button class="btn" data-act="importCsv">POSから取り込む</button>' +
+    '<button class="btn" data-act="paste">まとめて登録</button>' +
+    '<button class="btn primary" data-act="newItem">商品を追加</button></div></div>' +
+    '<div class="sec-head"><h2>登録ずみ</h2><span class="note">' + list.length + " 件</span></div>" +
+    '<div class="tw"><table><thead><tr><th>商品</th><th>カテゴリ</th><th class="n">在庫</th><th>単位</th><th class="n">発注点</th><th class="n">適正</th><th class="n">仕入値</th><th class="n">売価</th><th>仕入先</th><th></th></tr></thead>' +
+    "<tbody>" + rows + "</tbody></table></div>";
+}
+
+/* ---------- 設定 ---------- */
+function viewSettings() {
+  const docs = S.items.length + S.moves.length + S.counts.length;
+  return '<div class="card"><h2 style="font-size:15px;margin-bottom:10px">記録する人</h2>' +
+    '<p class="muted" style="margin-bottom:8px">入出庫や棚卸に、誰がやったかを残します（この端末だけの設定）。</p>' +
+    '<div class="row"><input type="text" id="who" placeholder="例: 髙井" value="' + esc(S.who) + '" style="max-width:220px">' +
+    '<button class="btn" data-act="saveWho">保存</button></div></div>' +
+
+    '<div class="card" style="margin-top:14px"><h2 style="font-size:15px;margin-bottom:6px">上に出す店舗</h2>' +
+    '<p class="muted" style="margin-bottom:10px">チェックを外した店舗は、いちばん上の切り替えボタンから消えます。データは消えません。</p>' +
+    S.settings.stores.map((s, n) =>
+      '<div class="row" style="margin-bottom:8px">' +
+      '<label class="row" style="gap:6px;cursor:pointer;min-width:96px"><input type="checkbox" data-store-show="' + n + '"' + (s.hidden ? "" : " checked") + ' style="width:auto"> 上に出す</label>' +
+      '<input type="text" data-store-name="' + n + '" value="' + esc(s.name) + '" style="max-width:180px">' +
+      '<span class="muted">' + (s.chain ? "見るだけ" : esc(s.id)) + "</span></div>").join("") +
+    '<button class="btn" data-act="saveStores">店舗を保存</button></div>' +
+
+    '<div class="card" style="margin-top:14px"><h2 style="font-size:15px;margin-bottom:10px">カテゴリ</h2>' +
+    '<div class="chips" style="margin-bottom:10px">' + categories().map(c => '<span class="chip" aria-pressed="false">' + esc(c) + "</span>").join("") + "</div>" +
+    '<div class="row"><input type="text" id="newCat" placeholder="カテゴリを追加" style="max-width:220px">' +
+    '<button class="btn" data-act="addCat">追加</button></div></div>' +
+
+    '<div class="card" style="margin-top:14px"><h2 style="font-size:15px;margin-bottom:10px">データ</h2>' +
+    '<p class="muted">保存先: ' + (S.cloud ? "クラウド（Supabase）。スマホとPCで同じ数字が見えます" : "つながっていません") + "</p>" +
+    '<p class="muted">記録の件数: 商品 ' + S.items.length + " / 入出庫 " + S.moves.length + " / 棚卸 " + S.counts.length + "（合計 " + docs + " ・上限 5,000）</p>" +
+    '<div class="row" style="margin-top:10px"><button class="btn ghost sm" data-act="forgetKey">この端末の合言葉を消す</button></div>' +
+    '<p class="muted" style="margin-top:4px">共用のパソコンで使ったあとや、合言葉を変えたときに押してください。次に開くと、また合言葉を聞かれます。</p>' +
+    '<div class="row" style="margin-top:10px"><button class="btn primary" data-act="importCsv">POSの在庫表を取り込む</button>' +
+    '<button class="btn" data-act="csvStock">在庫一覧をCSVで書き出す</button>' +
+    '<button class="btn" data-act="pruneOld">古い入出庫を整理する</button></div>' +
+    '<p class="muted" style="margin-top:6px">「整理」は、棚卸より前の入出庫の記録を消します。在庫数は変わりません。</p></div>' +
+
+    '<div class="card" style="margin-top:14px"><h2 style="font-size:15px;margin-bottom:10px">使い方</h2>' +
+    '<div class="help"><b>1. 商品を登録する</b>' +
+    "<ol><li>上の「商品」タブ →「商品を追加」。</li>" +
+    "<li>商品名・単位・<b>発注点</b>（これを下回ったら発注する数）・<b>適正在庫</b>（いつも持っておきたい数）を入れます。</li>" +
+    "<li>「はじめの在庫数」に、いま棚にある数を入れて保存。</li></ol>" +
+    "<b style=\"display:block;margin-top:10px\">2. 毎日つかう</b>" +
+    "<ol><li>届いたら「在庫」タブの ＋ ボタン、使ったら − ボタン。</li>" +
+    "<li>数を入れて「記録する」を押すだけです。</li></ol>" +
+    "<b style=\"display:block;margin-top:10px\">3. 週1回か月1回、棚卸</b>" +
+    "<ol><li>「棚卸」タブで、実際に数えた数を入れて「棚卸を保存」。</li>" +
+    "<li>帳簿とのズレはここで直ります。つけ忘れがあっても大丈夫です。</li>" +
+    "<li><b>帳簿と数が違うと、その行に「ズレの理由」の欄が出ます。</b>「〇個景品化」などを選ぶと文が入り、" +
+    "手で直せます。ここに入れた文は、POSの形式で書き出したときの<b>備考欄</b>にそのまま入ります。</li></ol>" +
+    "<b style=\"display:block;margin-top:10px\">POSの在庫表で一気に更新する</b>" +
+    "<ol><li>POS で「商品在庫表」を<b>その店舗だけ</b>選んでCSVに書き出します。</li>" +
+    "<li>この設定タブの「POSの在庫表を取り込む」（または商品タブの「POSから取り込む」）を押します。</li>" +
+    "<li>「CSVファイル」からそのファイルを選ぶと、<b>何件変わるかが先に出ます</b>。中身を見てから「この内容で取り込む」を押してください。</li>" +
+    "<li>商品名で照らし合わせます。CSVにしか無い商品は新しく登録し、CSVに無い商品はそのまま残します（消しません）。</li>" +
+    "<li>取り込むと、それより前の入出庫の記録は数に影響しなくなります（棚卸と同じ扱いです）。</li></ol>" +
+    "<b style=\"display:block;margin-top:10px\">「全店」の欄について</b>" +
+    "<ol><li>チェーン25店舗の合計をPOSから取り込んだ、<b>見るだけ</b>の欄です。入出庫も棚卸もできません。</li>" +
+    "<li>どんな商品がチェーンにあるか、どれが売れているかを調べるのに使います。</li>" +
+    "<li>使わないときは、この設定タブの「上に出す店舗」でチェックを外すと、上のボタンから消えます。</li></ol>" +
+    "<b style=\"display:block;margin-top:10px\">「未使用」について</b>" +
+    "<ol><li>棚卸も入出庫も一度も記録していない商品は「未使用」と出ます。POSに登録だけあって、いまは扱っていない商品です。</li>" +
+    "<li>未使用の商品は、在庫が0でも欠品にはならず、発注リストにも出ません。</li>" +
+    "<li>扱いはじめたら、＋で入荷を記録するか、発注点を入れてください。そこから見張りが始まります。</li></ol>" +
+    "<b style=\"display:block;margin-top:10px\">4. 発注する</b>" +
+    "<ol><li>「発注」タブに、足りない商品が仕入先ごとに並びます。</li>" +
+    "<li>「文字でコピー」でLINEやメールに貼れます。</li></ol></div></div>";
+}
+
+/* ---------- モーダル ---------- */
+let modalEl = null;
+let confirmOpen = 0;
+function closeModal() { if (modalEl) { modalEl.remove(); modalEl = null; } }
+
+/* ブラウザの confirm() はこのページの枠の中では出せないので、自前で出す */
+function askConfirm(msg, okLabel, danger) {
+  return new Promise(resolve => {
+    const el = document.createElement("div");
+    el.className = "modal";
+    el.style.zIndex = "90";
+    el.innerHTML = '<div class="sheet" role="alertdialog" aria-modal="true" style="max-width:400px">' +
+      '<div class="bd"><p style="font-size:14px;line-height:1.85">' + esc(msg) + "</p></div>" +
+      '<div class="ft"><button class="btn" data-ok="0">やめる</button>' +
+      '<button class="btn ' + (danger ? "danger" : "primary") + '" data-ok="1">' + esc(okLabel || "はい") + "</button></div></div>";
+    const done = v => { confirmOpen--; el.remove(); document.removeEventListener("keydown", onKey, true); resolve(v); };
+    const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); done(false); } };
+    el.addEventListener("click", e => {
+      if (e.target === el) return done(false);
+      const b = e.target.closest("[data-ok]");
+      if (b) done(b.dataset.ok === "1");
+    });
+    confirmOpen++;
+    document.addEventListener("keydown", onKey, true);
+    document.body.appendChild(el);
+    const ok = el.querySelector('[data-ok="1"]');
+    if (ok) ok.focus();
+  });
+}
+function openModal(title, bodyHTML, footHTML) {
+  closeModal();
+  modalEl = document.createElement("div");
+  modalEl.className = "modal";
+  modalEl.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(title) + '">' +
+    '<div class="hd"><h3>' + esc(title) + '</h3><span class="spacer"></span><button class="btn ghost sm" data-act="closeModal">閉じる</button></div>' +
+    '<div class="bd">' + bodyHTML + "</div>" +
+    '<div class="ft">' + footHTML + "</div></div>";
+  modalEl.addEventListener("click", e => { if (e.target === modalEl) closeModal(); });
+  document.body.appendChild(modalEl);
+  const first = modalEl.querySelector("input,select,textarea,button");
+  if (first) first.focus();
+  return modalEl;
+}
+
+function quickModal(itemId, kind) {
+  const list = storeItems();
+  if (!list.length) { toast("先に商品を登録してください"); return; }
+  const cur = itemId || list[0].id;
+  const body =
+    '<label class="f">商品<select id="mItem">' +
+    list.map(i => '<option value="' + esc(i.id) + '"' + (i.id === cur ? " selected" : "") + ">" + esc(i.name) + "（在庫 " + fmt(stockOf(i)) + esc(i.unit || "個") + "）</option>").join("") +
+    "</select></label>" +
+    '<div><div style="font-size:12px;color:var(--ink-2);font-weight:500;margin-bottom:4px">種別</div>' +
+    '<div class="kinds" id="mKinds">' + Object.keys(KINDS).map(k =>
+      '<button type="button" data-kind="' + k + '" aria-pressed="' + (k === kind) + '">' + KINDS[k].label + "</button>").join("") + "</div></div>" +
+    '<label class="f">数量<div class="stepper"><button type="button" data-act="mMinus">−</button>' +
+    '<input type="number" id="mQty" inputmode="decimal" step="any" value="1" min="0">' +
+    '<button type="button" data-act="mPlus">＋</button></div></label>' +
+    '<label class="f">メモ（任意）<input type="text" id="mMemo" placeholder="例: ROCK商事 納品 / 土曜ぶん"></label>' +
+    '<p class="muted" id="mPreview"></p>';
+  const el = openModal("入出庫を記録", body,
+    '<button class="btn" data-act="closeModal">やめる</button><button class="btn primary" data-act="saveMove">記録する</button>');
+  el.dataset.kind = kind || "in";
+  const upd = () => {
+    const it = itemById($("#mItem", el).value);
+    const k = KINDS[el.dataset.kind];
+    const q = num($("#mQty", el).value);
+    if (!it) return;
+    $("#mPreview", el).textContent = it.name + "：" + fmt(stockOf(it)) + " → " + fmt(stockOf(it) + k.sign * q) + (it.unit || "個");
+  };
+  el.addEventListener("input", upd);
+  el.addEventListener("click", e => {
+    const b = e.target.closest("[data-kind]");
+    if (b && b.parentElement.id === "mKinds") {
+      el.dataset.kind = b.dataset.kind;
+      [...b.parentElement.children].forEach(x => x.setAttribute("aria-pressed", x === b));
+      upd();
+    }
+  });
+  upd();
+}
+
+function itemModal(id) {
+  const it = id ? itemById(id) : null;
+  const cats = categories();
+  const sups = suppliers();
+  const f = (label, key, type, ph, val) =>
+    '<label class="f">' + label + '<input type="' + type + '" id="fi_' + key + '" ' +
+    (type === "number" ? 'inputmode="decimal" step="any" ' : "") +
+    'placeholder="' + esc(ph || "") + '" value="' + esc(val == null ? "" : val) + '"></label>';
+  const body =
+    f("商品名", "name", "text", "例: 液体チョーク 250ml", it ? it.name : "") +
+    '<div class="grid2">' +
+    '<label class="f">カテゴリ<input type="text" id="fi_category" list="dlCat" value="' + esc(it ? it.category : (S.cat || cats[0] || "")) + '"></label>' +
+    f("単位", "unit", "text", "本 / 個 / 箱", it ? it.unit : "個") + "</div>" +
+    '<datalist id="dlCat">' + cats.map(c => '<option value="' + esc(c) + '"></option>').join("") + "</datalist>" +
+    '<div class="grid2">' +
+    f("発注点（これ以下で発注）", "minQty", "number", "例: 5", it ? it.minQty : "") +
+    f("適正在庫（いつも持ちたい数）", "parQty", "number", "例: 15", it ? it.parQty : "") + "</div>" +
+    '<div class="grid2">' +
+    f("仕入値（1つあたり）", "cost", "number", "例: 780", it ? it.cost : "") +
+    f("売価（1つあたり）", "price", "number", "例: 1400", it ? it.price : "") + "</div>" +
+    '<label class="f">仕入先<input type="text" id="fi_supplier" list="dlSup" value="' + esc(it ? it.supplier : "") + '"></label>' +
+    '<datalist id="dlSup">' + sups.map(c => '<option value="' + esc(c) + '"></option>').join("") + "</datalist>" +
+    '<label class="f">メモ<textarea id="fi_note" rows="2" placeholder="置き場所・型番など">' + esc(it ? it.note : "") + "</textarea></label>" +
+    (it ? "" : f("はじめの在庫数", "init", "number", "いま棚にある数", "")) +
+    '<label class="f">店舗<select id="fi_store">' +
+    realStores().map(s => '<option value="' + esc(s.id) + '"' + ((it ? it.store : S.store) === s.id ? " selected" : "") + ">" + esc(s.name) + "</option>").join("") +
+    "</select></label>";
+  const foot = (it && !S.sample ? '<button class="btn sm danger" data-act="delItem" data-id="' + esc(it.id) + '">削除</button><span class="spacer"></span>' : "") +
+    (it && !S.sample ? '<button class="btn" data-act="copyItem" data-id="' + esc(it.id) + '">他店にコピー</button>' : "") +
+    '<button class="btn primary" data-act="saveItem" data-id="' + esc(it ? it.id : "") + '">保存</button>';
+  openModal(it ? "商品を編集" : "商品を追加", body, foot);
+}
+
+function detailModal(id) {
+  const it = itemById(id); if (!it) return;
+  const st = statusOf(it), q = stockOf(it);
+  const c = S.lastCount[it.id];
+  const hist = activeMoves().filter(m => m.itemId === it.id)
+    .sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 10);
+  const body =
+    '<div class="row" style="align-items:flex-end"><div><div class="muted">いまの在庫</div>' +
+    '<div class="num" style="font-size:34px;font-weight:600;line-height:1.1">' + esc(fmt(q)) + '<span style="font-size:14px;color:var(--ink-3)"> ' + esc(it.unit || "個") + "</span></div></div>" +
+    '<span class="spacer"></span>' + (st === "ok" ? '<span class="pill ok">適正</span>' : '<span class="pill ' + (st === "out" ? "crit" : st === "low" ? "warn" : st === "over" ? "over" : "ok") + '">' + STATUS_LABEL[st] + "</span>") + "</div>" +
+    '<div class="tw"><table><tbody>' +
+    ["カテゴリ|" + (it.category || "-"), "仕入先|" + (it.supplier || "-"),
+     "発注点|" + fmt(it.minQty) + " " + (it.unit || "個"), "適正在庫|" + fmt(it.parQty) + " " + (it.unit || "個"),
+     "仕入値|" + (num(it.cost) ? yen(it.cost) : "-"), "売価|" + (num(it.price) ? yen(it.price) : "-"),
+     "在庫金額(" + valueBasis() + ")|" + yen(q * unitValue(it)),
+     "前回の棚卸|" + (c ? stampLabel(c.at) + "（" + fmt(c.qty) + "）" : "まだ")].map(r => {
+      const p = r.split("|");
+      return "<tr><th style=\"width:110px\">" + esc(p[0]) + '</th><td class="n">' + esc(p[1]) + "</td></tr>";
+    }).join("") + "</tbody></table></div>" +
+    (it.note ? '<p class="muted">' + esc(it.note) + "</p>" : "") +
+    '<div><div style="font-size:12px;color:var(--ink-2);font-weight:500;margin:4px 0">最近の動き</div>' +
+    (hist.length ? '<div class="tw"><table><tbody>' + hist.map(m => {
+      const k = KINDS[m.kind] || { label: m.kind, sign: 1 };
+      return "<tr><td style=\"color:var(--ink-3)\">" + esc(stampLabel(m.at)) + "</td><td>" + esc(k.label) +
+        '</td><td class="n" style="color:' + (k.sign > 0 ? "var(--accent)" : "var(--crit)") + '">' + (k.sign > 0 ? "+" : "−") + esc(fmt(m.qty)) +
+        '</td><td class="w" style="color:var(--ink-3)">' + esc(m.memo || "") + "</td></tr>";
+    }).join("") + "</tbody></table></div>" : '<p class="muted">まだ記録がありません。</p>') + "</div>";
+  openModal(it.name, body,
+    '<button class="btn" data-act="edit" data-id="' + esc(it.id) + '">編集</button><span class="spacer"></span>' +
+    '<button class="btn" data-act="quick" data-id="' + esc(it.id) + '" data-kind="out">使用</button>' +
+    '<button class="btn primary" data-act="quick" data-id="' + esc(it.id) + '" data-kind="in">入荷</button>');
+}
+
+function pasteModal() {
+  const body = '<p class="muted">1行に1商品。エクセルやメモ帳からそのまま貼れます。1行目が見出しでも大丈夫です。</p>' +
+    '<p class="muted">並び順: <b>商品名, カテゴリ, 単位, 発注点, 適正在庫, 仕入値, 売価, 仕入先, いまの在庫数</b></p>' +
+    '<textarea id="pasteBox" rows="9" placeholder="液体チョーク 250ml, 物販, 本, 4, 12, 780, 1400, ROCK商事, 6&#10;フィンガーテープ 13mm, 物販, 巻, 10, 30, 180, 350, ROCK商事, 22"></textarea>' +
+    '<p class="muted">登録先: <b>' + esc(storeName(S.store)) + "</b></p>";
+  openModal("まとめて登録", body,
+    '<button class="btn" data-act="closeModal">やめる</button><button class="btn primary" data-act="doPaste">読み込んで登録</button>');
+}
+
+/* ---------- POSの棚卸フォーマットで書き出す ---------- */
+
+/* Shift-JIS の変換表。TextDecoder で読める組み合わせを総当たりして逆引きを作る（使うときだけ） */
+let SJIS = null;
+function sjisMap() {
+  if (SJIS) return SJIS;
+  const map = new Map(), dec = new TextDecoder("shift_jis"), pair = new Uint8Array(2);
+  for (let b = 0; b < 0x80; b++) map.set(String.fromCharCode(b), [b]);
+  for (let b = 0xA1; b <= 0xDF; b++) {
+    const ch = dec.decode(new Uint8Array([b]));
+    if (ch.length === 1 && ch !== String.fromCharCode(0xFFFD)) map.set(ch, [b]);
+  }
+  for (let hi = 0x81; hi <= 0xFC; hi++) {
+    for (let lo = 0x40; lo <= 0xFC; lo++) {
+      if (lo === 0x7F) continue;
+      pair[0] = hi; pair[1] = lo;
+      const ch = dec.decode(pair);
+      if (ch.length === 1 && ch !== String.fromCharCode(0xFFFD) && !map.has(ch)) map.set(ch, [hi, lo]);
+    }
+  }
+  SJIS = map;
+  return map;
+}
+function toSjis(text) {
+  const map = sjisMap(), out = [];
+  for (const ch of text) {
+    const b = map.get(ch);
+    if (b) for (const x of b) out.push(x); else out.push(0x3F);
+  }
+  return new Uint8Array(out);
+}
+/* 記号を落としたゆるい名前。POSの商品在庫表は「ー」などを "?" に化けさせて書き出すので、
+   そこだけ違う同じ商品を結びつけるために使う */
+const looseKey = s => normName(s).toLowerCase()
+  .replace(/[?‐-―ー－−・･_,.\-]/g, "")
+  .replace(/\s+/g, "");
+/* キーが重なったものは、取り違えると危ないので捨てる */
+function uniqueBy(list, keyOf) {
+  const m = {}, bad = {};
+  for (const x of list) {
+    const k = keyOf(x);
+    if (!k || bad[k]) continue;
+    if (m[k] && m[k] !== x) { bad[k] = 1; delete m[k]; continue; }
+    m[k] = x;
+  }
+  return m;
+}
+/* 半角英数を全角に。POS は商品名を全角で持っている */
+function toWide(s) {
+  return String(s == null ? "" : s)
+    .replace(/[\x21-\x7E]/g, c => String.fromCharCode(c.charCodeAt(0) + 0xFEE0))
+    .replace(/ /g, "　");
+}
+const posName = it => { const r = posrefOf(it); return r ? r[0] : toWide(it.name); };
+const posGroup = it => { const r = posrefOf(it); return r ? r[1] : (it.category || ""); };
+const posrefOf = it => S.posref[normName(it.name)] || S.posrefLoose[looseKey(it.name)] || null;
+
+/* 棚卸を1回ぶんにまとめる（同じ時刻で保存したものが1回） */
+function countSessions() {
+  const by = {};
+  S.counts.filter(c => c.store === S.store && c.memo === "棚卸").forEach(c => {
+    (by[c.at] = by[c.at] || []).push(c);
+  });
+  return Object.keys(by).sort((a, b) => b.localeCompare(a))
+    .map(at => ({ at: at, rows: by[at], by: by[at][0].by || "" }));
+}
+function posDate(d) {
+  return d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+}
+/* POS の棚卸リストは商品マスタ全部を並べる。POSの並び順のまま出し、
+   この店舗にしか無い商品を最後に足す */
+function posStocktakeRows() {
+  const items = storeItems();
+  const mine = {}, used = {}, out = [];
+  items.forEach(it => { mine[normName(it.name)] = it; });
+  const mineLoose = uniqueBy(items, it => looseKey(it.name));
+  for (const r of (S.posrefList || [])) {
+    let it = mine[normName(r[0])];
+    if (!it) {
+      const cand = mineLoose[looseKey(r[0])];
+      if (cand && !used[normName(cand.name)]) it = cand;
+    }
+    if (it) used[normName(it.name)] = true;
+    out.push({ name: r[0], group: r[1] || (it ? it.category : "") || "", item: it || null });
+  }
+  /* POSの一覧に無い商品（一覧を作ったあとに増えたもの）だけ最後に足す */
+  items.forEach(it => {
+    if (!used[normName(it.name)]) out.push({ name: toWide(it.name), group: it.category || "", item: it });
+  });
+  return out;
+}
+function posStocktakeCSV(session, head) {
+  const W = "　";
+  const title = "棚卸リスト" + W + W + "店舗名:" + head.store + W + W + "作成日:" + head.made +
+    W + "完了日:" + head.done + W + "作業者:" + head.by + W + "承認日:" + head.approved + W + "承認者:" + head.approver;
+  const counted = {};
+  if (session) session.rows.forEach(c => { counted[c.itemId] = c; });
+  const q = s => '"' + String(s == null ? "" : s).replace(/"/g, '""') + '"';
+  const lines = [q(title),
+    [q("商品コード"), q("商品名"), q("商品グループ"), q("システム在庫数"), q("システム在庫金額"),
+     q("システム在庫原価"), q("在庫数"), q("在庫金額"), q("在庫原価"), q("備考")].join(",")];
+  posStocktakeRows().forEach(r => {
+    const it = r.item;
+    const c = it ? counted[it.id] : null;
+    const sys = it ? (c && c.systemQty != null ? num(c.systemQty) : stockOf(it)) : 0;
+    const got = it ? (c ? num(c.qty) : sys) : 0;
+    const u = it ? unitValue(it) : 0;
+    lines.push([q(""), q(r.name), q(r.group), q(sys), q(Math.round(sys * u)), q(0),
+      q(got), q(Math.round(got * u)), q(0), (c && c.note ? q(c.note) : "")].join(","));
+  });
+  return lines.join("\r\n") + "\r\n";
+}
+function exportPosModal() {
+  if (isChain()) { toast("全店では書き出せません"); return; }
+  const sessions = countSessions();
+  const st = S.settings.stores.find(s => s.id === S.store) || {};
+  const today = posDate(new Date());
+  const body =
+    '<p class="muted">POS の「棚卸リスト」と同じ形（Shift-JIS・同じ見出し）で書き出します。商品名と商品グループは、取り込んだPOSの呼び方に合わせます。</p>' +
+    '<label class="f">書き出す棚卸<select id="exSes">' +
+    sessions.map((s, n) => '<option value="' + n + '">' + esc(stampLabel(s.at)) + " の棚卸（" + s.rows.length + "件）</option>").join("") +
+    '<option value="-1"' + (sessions.length ? "" : " selected") + ">棚卸ではなく、いまの在庫を出す</option></select></label>" +
+    '<label class="f">店舗名（POSでの呼び方）<input type="text" id="exStore" value="' + esc(st.posName || "") + '" placeholder="例: ディーボルダリングプラス船橋"></label>' +
+    '<div class="grid2">' +
+    '<label class="f">完了日<input type="text" id="exDone" value="' + esc(today) + '"></label>' +
+    '<label class="f">承認日<input type="text" id="exAppDate" value="' + esc(today) + '"></label></div>' +
+    '<div class="grid2">' +
+    '<label class="f">作業者<input type="text" id="exBy" value="' + esc(S.who) + '"></label>' +
+    '<label class="f">承認者<input type="text" id="exApprover" value="' + esc(S.who) + '"></label></div>' +
+    '<p class="muted">POSの棚卸リストと同じく<b>商品マスタ全部（' + fmt(posStocktakeRows().length) +
+    " 件）</b>を並べます。この店舗で扱っていない商品は在庫0で出ます。商品コードは、POSの書き出しでも空欄なので空にしています。</p>";
+  openModal("POSの棚卸フォーマットで書き出す", body,
+    '<button class="btn" data-act="closeModal">やめる</button>' +
+    '<button class="btn primary" data-act="doExportPos">書き出す</button>');
+}
+async function runExportPos() {
+  const el = modalEl;
+  const sessions = countSessions();
+  const pick = parseInt($("#exSes", el).value, 10);
+  const session = pick >= 0 ? sessions[pick] : null;
+  const head = {
+    store: $("#exStore", el).value.trim() || storeName(S.store),
+    made: posDate(new Date()),
+    done: $("#exDone", el).value.trim(),
+    by: $("#exBy", el).value.trim(),
+    approved: $("#exAppDate", el).value.trim(),
+    approver: $("#exApprover", el).value.trim()
+  };
+  /* POSでの店舗名は次回のために覚えておく */
+  const st = S.settings.stores.find(s => s.id === S.store);
+  if (st && st.posName !== head.store) {
+    S.settings.stores = S.settings.stores.map(s => s.id === S.store ? Object.assign({}, s, { posName: head.store }) : s);
+    try { await saveSettings(); } catch (e) { /* 保存できなくても書き出しは続ける */ }
+  }
+  const text = posStocktakeCSV(session, head);
+  closeModal();
+  const name = "棚卸リスト_" + head.store + "_" + head.done.replace(/\//g, "") + ".csv";
+  downloadFile(new Blob([toSjis(text)]), name);
+  toast("書き出しました");
+}
+
+/* ---------- POSの在庫表の取り込み ---------- */
+let IMPORT = null;
+
+/* Shift-JIS で書き出されることが多いので、UTF-8 で化けたら読み直す */
+function decodeCsv(buf) {
+  const utf8 = new TextDecoder("utf-8").decode(buf);
+  if (utf8.indexOf(String.fromCharCode(0xFFFD)) < 0) return utf8;
+  try { return new TextDecoder("shift_jis").decode(buf); } catch (e) { return utf8; }
+}
+function parseCSV(text) {
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cur); cur = ""; }
+    else if (ch === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+    else if (ch !== "\r") cur += ch;
+  }
+  if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ""));
+}
+/* 全角英数を半角に。POS は商品名を全角で書き出す */
+function normName(s) {
+  return String(s == null ? "" : s)
+    .replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/　/g, " ").replace(/\s+/g, " ").trim()
+    .replace(/\?chalkup\?/g, "chalkup").replace(/TN\?Pro/g, "TN-Pro");
+}
+const COL_ALIAS = {
+  name: ["商品名", "品名", "商品"],
+  qty: ["在庫数(理論)", "在庫数（理論）", "在庫数", "現在庫", "在庫"],
+  value: ["在庫金額"],
+  supplier: ["仕入先", "取引先"]
+};
+function findCols(rows) {
+  for (let r = 0; r < Math.min(rows.length, 5); r++) {
+    const cells = rows[r].map(c => String(c).trim());
+    const idx = {};
+    for (const key of Object.keys(COL_ALIAS)) {
+      const at = cells.findIndex(c => COL_ALIAS[key].indexOf(c) >= 0);
+      if (at >= 0) idx[key] = at;
+    }
+    if (idx.name != null && idx.qty != null) return { header: r, idx: idx };
+  }
+  return null;
+}
+/* 新しい商品のカテゴリは、同じ仕入先の商品から借りる */
+function guessCategory(supplier) {
+  if (!supplier) return "";
+  const m = storeItems().find(i => i.supplier === supplier && i.category);
+  return m ? m.category : "";
+}
+function buildPlan(text) {
+  const rows = parseCSV(text);
+  const found = findCols(rows);
+  if (!found) return { error: "「商品名」と「在庫数」の列が見つかりませんでした。POSの商品在庫表のCSVか確認してください。" };
+  const ix = found.idx;
+  const byName = {};
+  storeItems().forEach(i => { byName[normName(i.name)] = i; });
+  const byLoose = uniqueBy(storeItems(), i => looseKey(i.name));
+  const update = [], create = [], seen = {};
+  let same = 0;
+  for (let r = found.header + 1; r < rows.length; r++) {
+    const cells = rows[r];
+    const name = normName(cells[ix.name]);
+    if (!name) continue;
+    const qty = num(String(cells[ix.qty]).replace(/,/g, ""));
+    const value = ix.value != null ? num(String(cells[ix.value]).replace(/,/g, "")) : 0;
+    const price = qty !== 0 && value !== 0 ? Math.round(Math.abs(value / qty)) : 0;
+    const supplier = ix.supplier != null ? normName(cells[ix.supplier]) : "";
+    /* 記号の化けだけが違う同じ商品を、二重登録しないように拾う */
+    const it = byName[name] || byLoose[looseKey(name)];
+    seen[name] = true;
+    if (it) seen[normName(it.name)] = true;
+    if (it) { if (stockOf(it) !== qty) update.push({ item: it, to: qty, price: price }); else same++; }
+    else create.push({ name: name, qty: qty, price: price, supplier: supplier });
+  }
+  const missing = storeItems().filter(i => !seen[normName(i.name)]);
+  const total = update.length + create.length + same;
+  return {
+    update: update, create: create, same: same, missing: missing,
+    tooMany: total > 1000
+  };
+}
+function planHTML(p) {
+  if (p.error) return '<p class="muted" style="color:var(--crit)">' + esc(p.error) + "</p>";
+  const warn = p.tooMany
+    ? '<p class="muted" style="color:var(--warn)">商品が ' + fmt(p.update.length + p.create.length + p.same) +
+      " 件あります。全店の在庫表ではありませんか？ 全店の合計を店舗の在庫として取り込むと、数字が合わなくなります。</p>"
+    : "";
+  const rows = p.update.slice(0, 12).map(u =>
+    "<tr><td class=\"w\">" + esc(u.item.name) + '</td><td class="n">' + esc(fmt(stockOf(u.item))) +
+    '</td><td class="n">→</td><td class="n"><b>' + esc(fmt(u.to)) + "</b></td></tr>").join("");
+  return warn +
+    '<div class="strip">' +
+    '<div><div class="k">在庫が変わる</div><div class="v">' + p.update.length + '<small>件</small></div></div>' +
+    '<div><div class="k">変わらない</div><div class="v">' + p.same + '<small>件</small></div></div>' +
+    '<div><div class="k">新しく登録</div><div class="v">' + p.create.length + '<small>件</small></div></div>' +
+    '<div><div class="k">CSVに無い</div><div class="v">' + p.missing.length + '<small>件</small></div></div>' +
+    "</div>" +
+    '<p class="muted">「CSVに無い」商品はそのままにします（消しません）。</p>' +
+    (p.update.length ? '<div class="tw"><table><thead><tr><th>商品</th><th class="n">いま</th><th></th><th class="n">取り込み後</th></tr></thead><tbody>' +
+      rows + "</tbody></table></div>" +
+      (p.update.length > 12 ? '<p class="muted">ほか ' + (p.update.length - 12) + " 件</p>" : "") : "") +
+    (p.create.length ? '<p class="muted">新しく登録: ' + p.create.slice(0, 8).map(c => esc(c.name)).join(" / ") +
+      (p.create.length > 8 ? " ほか " + (p.create.length - 8) + " 件" : "") + "</p>" : "");
+}
+function importModal() {
+  if (isChain()) { toast("全店では取り込めません。船橋か八千代に切り替えてください"); return; }
+  IMPORT = null;
+  const body =
+    '<p class="muted">POS の「商品在庫表」CSV を読み込んで、<b>' + esc(storeName(S.store)) + '</b> のいまの在庫数を一括で書き換えます。' +
+    "商品名で照らし合わせ、CSVに無い商品はそのまま残します。</p>" +
+    '<label class="f">CSVファイル<input type="file" id="impFile" accept=".csv,text/csv"></label>' +
+    '<label class="f">または、中身を貼り付ける<textarea id="impPaste" rows="4" placeholder="エクセルやメモ帳から貼り付け"></textarea></label>' +
+    '<div id="impPreview"></div>';
+  const el = openModal("POSの在庫表を取り込む", body,
+    '<button class="btn" data-act="closeModal">やめる</button>' +
+    '<button class="btn primary" data-act="doImport" id="impGo" disabled>この内容で取り込む</button>');
+
+  const show = (text) => {
+    IMPORT = buildPlan(text);
+    $("#impPreview", el).innerHTML = planHTML(IMPORT);
+    const go = $("#impGo", el);
+    go.disabled = !!IMPORT.error || (!IMPORT.update.length && !IMPORT.create.length);
+  };
+  $("#impFile", el).addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    $("#impPreview", el).innerHTML = '<p class="muted">読み込んでいます…</p>';
+    show(decodeCsv(await f.arrayBuffer()));
+  });
+  $("#impPaste", el).addEventListener("change", e => { if (e.target.value.trim()) show(e.target.value); });
+}
+async function runImport() {
+  const p = IMPORT;
+  if (!p || p.error) return;
+  const go = $("#impGo", modalEl);
+  const at = nowISO();
+  const label = n => { if (go) go.textContent = "取り込み中… " + n + "/" + (p.update.length + p.create.length); };
+  if (go) go.disabled = true;
+  let n = 0;
+  try {
+    for (const u of p.update) {
+      const c = S.lastCount[u.item.id];
+      await put("counts", { id: c ? c.id : undefined, itemId: u.item.id, store: u.item.store, qty: u.to, at: at, memo: "POSの在庫表から取り込み", by: S.who });
+      if (!num(u.item.price) && u.price) await put("items", Object.assign({}, u.item, { price: u.price }));
+      label(++n);
+    }
+    for (const c of p.create) {
+      const id = await put("items", {
+        name: c.name, store: S.store, category: guessCategory(c.supplier), unit: "個",
+        minQty: 0, parQty: 0, cost: 0, price: c.price, supplier: c.supplier,
+        note: "", archived: false, createdAt: at
+      });
+      if (c.qty !== 0) await put("counts", { itemId: id, store: S.store, qty: c.qty, at: at, memo: "POSの在庫表から取り込み", by: S.who });
+      label(++n);
+    }
+  } catch (e) {
+    closeModal(); toast("途中で失敗しました: " + (e && e.code ? e.code : "エラー")); apply(); return;
+  }
+  closeModal();
+  toast("取り込みました（在庫 " + p.update.length + "件・新規 " + p.create.length + "件）");
+  apply();
+}
+
+/* ---------- 操作 ---------- */
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const act = b.dataset.act, id = b.dataset.id;
+
+  if (act === "store") { S.store = id; LS.set("sb.store", id); apply(); if (id === "chain") ensureChain().catch(e => toast(e.message)); return; }
+  if (act === "tab") { S.tab = id; apply(); return; }
+  if (act === "cat") { S.cat = id; apply(); return; }
+  if (act === "filter") { S.filter = id; apply(); return; }
+  if (act === "countAll") { S.countAll = !S.countAll; apply(); return; }
+  if (act === "closeModal") { closeModal(); return; }
+  if (act === "newItem") { itemModal(null); return; }
+  if (act === "edit") { itemModal(id); return; }
+  if (act === "detail") { detailModal(id); return; }
+  if (act === "paste") { pasteModal(); return; }
+  if (act === "importCsv") { importModal(); return; }
+  if (act === "exportPos") { await ensurePosref().catch(e => toast(e.message)); exportPosModal(); return; }
+  if (act === "forgetKey") {
+    if (!await askConfirm("この端末に覚えている合言葉を消します。次に開くとまた聞かれます。", "消す", true)) return;
+    LS.set("sb.key", ""); APPKEY = "";
+    S.items = []; S.counts = []; S.moves = []; S.chain = []; S.posrefList = []; S.ready = false;
+    apply(); askKey();
+    return;
+  }
+  if (act === "useKey") {
+    const v = $("#akKey", modalEl).value.trim();
+    if (!v) return;
+    APPKEY = v;
+    try { await reloadAll(); LS.set("sb.key", v); closeModal(); }
+    catch (e) { APPKEY = ""; toast("合言葉が違うようです"); }
+    return;
+  }
+  if (act === "doExportPos") { await runExportPos(); return; }
+  if (act === "doImport") { await runImport(); return; }
+  if (act === "quick") { quickModal(id, b.dataset.kind || "in"); return; }
+  if (act === "mMinus" || act === "mPlus") {
+    const inp = $("#mQty", modalEl);
+    inp.value = Math.max(0, num(inp.value) + (act === "mPlus" ? 1 : -1));
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    return;
+  }
+
+  if (act === "saveMove") {
+    const it = itemById($("#mItem", modalEl).value);
+    const kind = modalEl.dataset.kind, q = num($("#mQty", modalEl).value);
+    if (!it) return;
+    if (q <= 0) { toast("数量を入れてください"); return; }
+    if (S.sample) { toast("サンプルは記録できません。先に商品を登録してください"); return; }
+    await put("moves", { itemId: it.id, store: it.store, kind: kind, qty: q, at: nowISO(), memo: $("#mMemo", modalEl).value.trim(), by: S.who });
+    closeModal(); toast(KINDS[kind].label + "を記録しました");
+    return;
+  }
+
+  if (act === "saveItem") {
+    const g = k => { const el = $("#fi_" + k, modalEl); return el ? el.value.trim() : ""; };
+    const name = g("name");
+    if (!name) { toast("商品名を入れてください"); return; }
+    const rec = {
+      name: name, store: g("store"), category: g("category"), unit: g("unit") || "個",
+      minQty: num(g("minQty")), parQty: num(g("parQty")), cost: num(g("cost")), price: num(g("price")),
+      supplier: g("supplier"), note: g("note"), archived: false,
+      createdAt: (id && itemById(id) ? itemById(id).createdAt : nowISO())
+    };
+    const newId = await put("items", id ? Object.assign({ id: id }, rec) : rec);
+    const init = $("#fi_init", modalEl);
+    if (!id && init && init.value !== "") {
+      await put("counts", { itemId: newId, store: rec.store, qty: num(init.value), at: nowISO(), memo: "登録時", by: S.who });
+    }
+    closeModal(); toast(id ? "保存しました" : "商品を追加しました");
+    return;
+  }
+
+  if (act === "delItem") {
+    const it = itemById(id); if (!it) return;
+    if (!await askConfirm(it.name + " を削除します。入出庫と棚卸の記録も一緒に消えます。元に戻せません。", "削除する", true)) return;
+    for (const m of S.moves.filter(m => m.itemId === id)) await del("moves", m.id);
+    for (const c of S.counts.filter(c => c.itemId === id)) await del("counts", c.id);
+    await del("items", id);
+    closeModal(); toast("削除しました");
+    return;
+  }
+
+  if (act === "copyItem") {
+    const it = itemById(id); if (!it) return;
+    const other = realStores().find(s => s.id !== it.store);
+    if (!other) { toast("コピー先の店舗がありません"); return; }
+    const c = Object.assign({}, it);
+    delete c.id; delete c._qty; c.store = other.id; c.createdAt = nowISO();
+    await put("items", c);
+    closeModal(); toast(other.name + " にコピーしました");
+    return;
+  }
+
+  if (act === "delMove") {
+    if (S.sample) { toast("サンプルは取り消せません"); return; }
+    if (!await askConfirm("この記録を取り消します。元に戻せません。", "取り消す", true)) return;
+    await del("moves", id); toast("取り消しました");
+    return;
+  }
+
+  if (act === "saveCount") {
+    if (S.sample) { toast("サンプルは保存できません。先に商品を登録してください"); return; }
+    const inputs = [...document.querySelectorAll("[data-count]")].filter(i => i.value !== "");
+    if (!inputs.length) { toast("実数を1件も入れていません"); return; }
+    const prune = $("#prune") && $("#prune").checked;
+    const at = nowISO();
+    let diffCount = 0, pruned = 0;
+    for (const inp of inputs) {
+      const itemId = inp.dataset.count, it = itemById(itemId);
+      if (!it) continue;
+      const q = num(inp.value);
+      if (q !== stockOf(it)) diffCount++;
+      const noteEl = document.querySelector('[data-note="' + itemId + '"]');
+      const note = q !== stockOf(it) && noteEl ? noteEl.value.trim() : "";
+      await put("counts", { itemId: itemId, store: it.store, qty: q, systemQty: stockOf(it), note: note, at: at, memo: "棚卸", by: S.who });
+      // 同じ商品の古い棚卸は数に影響しないので、直近3件だけ残す
+      const olds = S.counts.filter(c => c.itemId === itemId).sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(3);
+      for (const o of olds) await del("counts", o.id);
+      if (prune) {
+        for (const m of S.moves.filter(m => m.itemId === itemId && String(m.at) <= at)) { await del("moves", m.id); pruned++; }
+      }
+    }
+    toast("棚卸を保存しました（" + inputs.length + "件・ズレ " + diffCount + "件" + (pruned ? " / 記録 " + pruned + "件を整理" : "") + "）");
+    apply();
+    return;
+  }
+
+  if (act === "saveWho") { S.who = $("#who").value.trim(); LS.set("sb.who", S.who); toast("保存しました"); return; }
+  if (act === "saveStores") {
+    const next = S.settings.stores.map((s, n) => {
+      const el = document.querySelector('[data-store-name="' + n + '"]');
+      const sh = document.querySelector('[data-store-show="' + n + '"]');
+      return { id: s.id, name: el && el.value.trim() ? el.value.trim() : s.name, hidden: sh ? !sh.checked : !!s.hidden, chain: !!s.chain };
+    });
+    if (!next.some(s => !s.hidden)) { toast("少なくとも1つは「上に出す」にしてください"); return; }
+    S.settings.stores = next;
+    await saveSettings(); toast("保存しました"); apply(); return;
+  }
+  if (act === "addCat") {
+    const v = $("#newCat").value.trim(); if (!v) return;
+    S.settings.categories = [...new Set([...(S.settings.categories || []), v])];
+    await saveSettings(); toast("追加しました"); apply(); return;
+  }
+
+  if (act === "doPaste") {
+    const text = $("#pasteBox", modalEl).value.trim();
+    if (!text) { toast("貼り付けてから押してください"); return; }
+    const rows = text.split(/\r?\n/).map(l => l.split(/\t|,/).map(c => c.trim())).filter(r => r.length && r[0]);
+    if (rows.length && /商品名|name/i.test(rows[0][0])) rows.shift();
+    let n = 0;
+    for (const r of rows) {
+      if (!r[0]) continue;
+      const rec = {
+        name: r[0], store: S.store, category: r[1] || "", unit: r[2] || "個",
+        minQty: num(r[3]), parQty: num(r[4]), cost: num(r[5]), price: num(r[6]),
+        supplier: r[7] || "", note: "", archived: false, createdAt: nowISO()
+      };
+      const newId = await put("items", rec);
+      if (r[8] !== undefined && r[8] !== "") await put("counts", { itemId: newId, store: S.store, qty: num(r[8]), at: nowISO(), memo: "まとめて登録", by: S.who });
+      n++;
+    }
+    closeModal(); toast(n + " 件を登録しました");
+    return;
+  }
+
+  if (act === "pruneOld") {
+    const target = baseItems().reduce((a, it) => {
+      const c = S.lastCount[it.id];
+      return a + (c ? S.moves.filter(m => m.itemId === it.id && String(m.at) <= String(c.at)).length : 0);
+    }, 0);
+    if (!target) { toast("整理できる記録はありませんでした"); return; }
+    if (!await askConfirm("棚卸より前の入出庫の記録 " + target + " 件を消します。在庫数は変わりませんが、履歴は元に戻せません。", "整理する", true)) return;
+    let n = 0;
+    for (const it of baseItems()) {
+      const c = S.lastCount[it.id]; if (!c) continue;
+      for (const m of S.moves.filter(m => m.itemId === it.id && String(m.at) <= String(c.at))) { await del("moves", m.id); n++; }
+    }
+    toast(n ? n + " 件の古い記録を整理しました" : "整理できる記録はありませんでした");
+    apply(); return;
+  }
+
+  if (act === "copyOrder") {
+    const t = orderText();
+    try { await navigator.clipboard.writeText(t); toast("コピーしました"); }
+    catch (err) { openModal("発注リスト", '<p class="muted">下の文字を選んでコピーしてください。</p><textarea rows="12">' + esc(t) + "</textarea>", '<button class="btn" data-act="closeModal">閉じる</button>'); }
+    return;
+  }
+  if (act === "csvOrder") { await saveCSV(orderCSV(), "発注リスト_" + storeName(S.store) + "_" + new Date().toISOString().slice(0, 10) + ".csv"); return; }
+  if (act === "csvStock") { await saveCSV(stockCSV(), "在庫一覧_" + storeName(S.store) + "_" + new Date().toISOString().slice(0, 10) + ".csv"); return; }
+  if (act === "csvChain") { await saveCSV(chainCSV(), "全店の在庫_" + new Date().toISOString().slice(0, 10) + ".csv"); return; }
+});
+
+document.addEventListener("input", e => {
+  if (e.target.id === "q") { S.q = e.target.value; const p = document.activeElement; recompute(); render(); const n = $("#q"); if (n && p && p.id === "q") { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } return; }
+  if (e.target.dataset && e.target.dataset.count) {
+    const it = itemById(e.target.dataset.count);
+    const d = document.querySelector('[data-diff="' + e.target.dataset.count + '"]');
+    if (!it || !d) return;
+    const why = document.querySelector('[data-why="' + e.target.dataset.count + '"]');
+    if (e.target.value === "") {
+      d.textContent = ""; d.className = "diff";
+      if (why) why.classList.remove("on");
+      return;
+    }
+    const diff = num(e.target.value) - stockOf(it);
+    d.textContent = diff === 0 ? "ぴったり" : (diff > 0 ? "+" : "") + fmt(diff);
+    d.className = "diff " + (diff < 0 ? "minus" : diff > 0 ? "plus" : "");
+    if (why) why.classList.toggle("on", diff !== 0);
+  }
+});
+/* ズレの理由を選ぶと、備考の文をその場で作る。あとから手で直せる */
+document.addEventListener("change", e => {
+  const sel = e.target.closest && e.target.closest("[data-reason]");
+  if (!sel) return;
+  const id = sel.dataset.reason;
+  const it = itemById(id);
+  const inp = document.querySelector('[data-note="' + id + '"]');
+  const qty = document.querySelector('[data-count="' + id + '"]');
+  if (!it || !inp || !qty) return;
+  const diff = num(qty.value) - stockOf(it);
+  const t = reasonText(sel.value, diff);
+  if (t) inp.value = t;
+  inp.focus();
+  if (sel.value === "miss") { const at = inp.value.indexOf("〇〇"); if (at >= 0) inp.setSelectionRange(at, at + 2); }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !confirmOpen) closeModal(); });
+
+/* ---------- CSV ---------- */
+function csvLine(a) { return a.map(v => { const s = String(v == null ? "" : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(","); }
+function orderCSV() {
+  const rows = [["仕入先", "商品名", "カテゴリ", "在庫", "発注点", "適正在庫", "発注数の目安", "単位", "仕入値", "金額"]];
+  needList().slice().sort((a, b) => String(a.supplier || "").localeCompare(String(b.supplier || ""), "ja"))
+    .forEach(i => rows.push([i.supplier || "", i.name, i.category || "", stockOf(i), i.minQty, i.parQty, orderQty(i), i.unit || "個", i.cost || "", Math.round(orderQty(i) * unitValue(i))]));
+  return "﻿" + rows.map(csvLine).join("\r\n");
+}
+function stockCSV() {
+  const rows = [["店舗", "商品名", "カテゴリ", "在庫", "単位", "発注点", "適正在庫", "仕入値", "売価", "仕入先", "状態", "在庫金額"]];
+  storeItems().forEach(i => rows.push([storeName(i.store), i.name, i.category || "", stockOf(i), i.unit || "個", i.minQty, i.parQty, i.cost || "", i.price || "", i.supplier || "", STATUS_LABEL[statusOf(i)], Math.round(stockOf(i) * unitValue(i))]));
+  return "﻿" + rows.map(csvLine).join("\r\n");
+}
+function chainCSV() {
+  const rows = [["商品名", "カテゴリ", "在庫", "単位", "単価(売価)", "在庫金額", "ブランド", "販売数"]];
+  chainRows().forEach(r => rows.push([r[0], r[1], r[3], r[2], r[4] || "", Math.max(num(r[3]), 0) * num(r[4]), r[5] || "", r[6]]));
+  return "﻿" + rows.map(csvLine).join("\r\n");
+}
+function downloadFile(data, filename, mime) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type: mime || "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+}
+async function saveCSV(text, filename) { downloadFile(text, filename); toast("書き出しました"); }
+
+/* 起動（定数の定義がすべて済んだ最後に呼ぶ） */
+boot();
+</script>
+
+</body>
+</html>
