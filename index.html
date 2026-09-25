@@ -307,7 +307,7 @@ const S = {
   ready: false, sample: false, cloud: false,
   items: [], moves: [], counts: [],
   settings: { stores: DEFAULT_STORES, categories: DEFAULT_CATS },
-  chain: [], chainAt: "", posref: {}, posrefList: [], posrefLoose: {},
+  chain: [], chainAt: "", posref: {}, posrefList: [], posrefLoose: {}, files: [],
   store: LS.get("sb.store") || "funabashi",
   tab: "stock",
   q: "", cat: "", filter: "active", countAll: false, countSort: LS.get("sb.countSort") || "cat",
@@ -407,6 +407,12 @@ async function ensureChain() {
   let rows = [];
   for (const p of parts) { if (Array.isArray(p.rows)) rows = rows.concat(p.rows); if (p.at) S.chainAt = p.at; }
   S.chain = rows; apply();
+}
+/* こちらで作ったファイル（まとめた棚卸リストなど）。大きいので使うときだけ読む */
+async function ensureFiles() {
+  if (S.files.length) return;
+  S.files = (await sbSelect("files")).sort((x, y) => String(y.at).localeCompare(String(x.at)));
+  apply();
 }
 async function ensurePosref() {
   if (S.posrefList.length) return;
@@ -950,13 +956,28 @@ function viewSettings() {
 
     '<div class="card" style="margin-top:14px"><h2 style="font-size:15px;margin-bottom:10px">データ</h2>' +
     '<p class="muted">保存先: ' + (S.cloud ? "クラウド（Supabase）。スマホとPCで同じ数字が見えます" : "つながっていません") + "</p>" +
-    '<p class="muted">記録の件数: 商品 ' + S.items.length + " / 入出庫 " + S.moves.length + " / 棚卸 " + S.counts.length + "（合計 " + docs + " ・上限 5,000）</p>" +
-    '<div class="row" style="margin-top:10px"><button class="btn ghost sm" data-act="forgetKey">この端末の合言葉を消す</button></div>' +
-    '<p class="muted" style="margin-top:4px">共用のパソコンで使ったあとや、合言葉を変えたときに押してください。次に開くと、また合言葉を聞かれます。</p>' +
+    '<p class="muted">記録の件数: 商品 ' + S.items.length + " / 入出庫 " + S.moves.length + " / 棚卸 " + S.counts.length + "（合計 " + docs + "）</p>" +
     '<div class="row" style="margin-top:10px"><button class="btn primary" data-act="importCsv">POSの在庫表を取り込む</button>' +
     '<button class="btn" data-act="csvStock">在庫一覧をCSVで書き出す</button>' +
     '<button class="btn" data-act="pruneOld">古い入出庫を整理する</button></div>' +
-    '<p class="muted" style="margin-top:6px">「整理」は、棚卸より前の入出庫の記録を消します。在庫数は変わりません。</p></div>' +
+    '<p class="muted" style="margin-top:6px">「整理」は、棚卸より前の入出庫の記録を消します。在庫数は変わりません。</p>' +
+    "</div>" +
+
+    '<div class="card" style="margin-top:14px"><h2 style="font-size:15px;margin-bottom:6px">保存したファイル</h2>' +
+    '<p class="muted" style="margin-bottom:10px">こちらで作ってお渡しするファイルです。スマホでもここから取れます。</p>' +
+    (S.files.length
+      ? '<div class="stack" style="gap:8px">' + S.files.map(f =>
+          '<div class="row" style="align-items:flex-start;gap:10px">' +
+          '<div style="flex:1;min-width:160px"><div style="font-weight:600;font-size:13.5px;overflow-wrap:anywhere">' + esc(f.name) + "</div>" +
+          '<div class="muted">' + esc(stampLabel(f.at)) + (f.note ? " / " + esc(f.note) : "") + "</div></div>" +
+          '<button class="btn sm" data-act="getFile" data-id="' + esc(f.id) + '">ダウンロード</button></div>').join("")
+        + "</div>"
+      : '<p class="muted">まだありません。<button class="btn sm" data-act="loadFiles">読み込む</button></p>') +
+    "</div>" +
+
+    '<div class="card" style="margin-top:14px"><h2 style="font-size:15px;margin-bottom:10px">合言葉</h2>' +
+    '<div class="row"><button class="btn ghost sm" data-act="forgetKey">この端末の合言葉を消す</button></div>' +
+    '<p class="muted" style="margin-top:4px">共用のパソコンで使ったあとや、合言葉を変えたときに押してください。次に開くと、また合言葉を聞かれます。</p></div>' +
 
     '<div class="card" style="margin-top:14px"><h2 style="font-size:15px;margin-bottom:10px">使い方</h2>' +
     '<div class="help"><b>1. 商品を登録する</b>' +
@@ -1579,7 +1600,7 @@ document.addEventListener("click", async (e) => {
   const act = b.dataset.act, id = b.dataset.id;
 
   if (act === "store") { S.store = id; DRAFT = null; LS.set("sb.store", id); apply(); if (id === "chain") ensureChain().catch(e => toast(e.message)); return; }
-  if (act === "tab") { S.tab = id; apply(); return; }
+  if (act === "tab") { S.tab = id; apply(); if (id === "settings") ensureFiles().catch(() => {}); return; }
   if (act === "cat") { S.cat = id; apply(); return; }
   if (act === "filter") { S.filter = id; apply(); return; }
   if (act === "countAll") { S.countAll = !S.countAll; apply(); return; }
@@ -1601,6 +1622,19 @@ document.addEventListener("click", async (e) => {
     const t = posEntryText();
     try { await navigator.clipboard.writeText(t); toast("コピーしました"); }
     catch (err) { openModal("POSに打つ一覧", '<p class="muted">下の文字を選んでコピーしてください。</p><textarea rows="14">' + esc(t) + "</textarea>", '<button class="btn" data-act="closeModal">閉じる</button>'); }
+    return;
+  }
+  if (act === "loadFiles") {
+    toast("読み込んでいます…");
+    try { await ensureFiles(); } catch (e) { toast("読み込めませんでした"); }
+    return;
+  }
+  if (act === "getFile") {
+    const f = S.files.find(x => x.id === id);
+    if (!f || !f.text) { toast("ファイルの中身が見つかりません"); return; }
+    /* POSに合わせて Shift-JIS で保存するものと、そのままのものがある */
+    downloadFile(f.sjis ? new Blob([toSjis(f.text)]) : f.text, f.name);
+    toast("書き出しました");
     return;
   }
   if (act === "forgetKey") {
