@@ -310,7 +310,7 @@ const S = {
   chain: [], chainAt: "", posref: {}, posrefList: [], posrefLoose: {},
   store: LS.get("sb.store") || "funabashi",
   tab: "stock",
-  q: "", cat: "", filter: "active", countAll: false,
+  q: "", cat: "", filter: "active", countAll: false, countSort: LS.get("sb.countSort") || "cat",
   who: LS.get("sb.who") || "",
   stock: {}, lastCount: {}
 };
@@ -775,8 +775,36 @@ function reasonText(kind, diff) {
   if (kind === "unknown") return "原因不明";
   return "";
 }
+/* 棚卸の並び順。棚を回る順に合わせられるように選べる */
+const COUNT_SORTS = [
+  ["cat", "カテゴリ順"],
+  ["name", "商品名順"],
+  ["pos", "POSの棚卸リストと同じ順"],
+  ["qty", "在庫の多い順"],
+  ["supplier", "仕入先順"]
+];
+function sortForCount(list) {
+  const byName = (a, b) => String(a.name).localeCompare(String(b.name), "ja");
+  if (S.countSort === "name") return list.sort(byName);
+  if (S.countSort === "qty") return list.sort((a, b) => stockOf(b) - stockOf(a) || byName(a, b));
+  if (S.countSort === "supplier") {
+    return list.sort((a, b) => String(a.supplier || "￿").localeCompare(String(b.supplier || "￿"), "ja") || byName(a, b));
+  }
+  if (S.countSort === "pos") {
+    if (!S.posrefList.length) return list.sort(byName);
+    const at = {};
+    S.posrefList.forEach((r, n) => { at[normName(r[0])] = n; at[looseKey(r[0])] = n; });
+    const pos = it => {
+      const k = at[normName(it.name)];
+      return k != null ? k : (at[looseKey(it.name)] != null ? at[looseKey(it.name)] : 1e9);
+    };
+    return list.sort((a, b) => pos(a) - pos(b) || byName(a, b));
+  }
+  return list.sort((a, b) =>
+    String(a.category || "￿").localeCompare(String(b.category || "￿"), "ja") || byName(a, b));
+}
 function viewCount() {
-  const list = storeItems().filter(i => (!S.cat || i.category === S.cat) && (S.countAll || statusOf(i) !== "idle"));
+  const list = sortForCount(storeItems().filter(i => (!S.cat || i.category === S.cat) && (S.countAll || statusOf(i) !== "idle")).slice());
   const cats = categories();
   const last = Object.values(S.lastCount).filter(c => c.store === S.store)
     .sort((a, b) => String(b.at).localeCompare(String(a.at)))[0];
@@ -806,6 +834,12 @@ function viewCount() {
     '<button class="chip" data-act="cat" data-id="" aria-pressed="' + (S.cat === "") + '">全カテゴリ</button>' +
     cats.map(c => '<button class="chip" data-act="cat" data-id="' + esc(c) + '" aria-pressed="' + (S.cat === c) + '">' + esc(c) + "</button>").join("") +
     '<button class="chip" data-act="countAll" aria-pressed="' + S.countAll + '">未使用の商品も出す</button>' +
+    "</div>" +
+    '<div class="row" style="margin-top:10px">' +
+    '<label class="f" style="flex-direction:row;align-items:center;gap:8px">並び順' +
+    '<select id="countSort" style="width:auto;min-width:190px">' +
+    COUNT_SORTS.map(s => '<option value="' + s[0] + '"' + (S.countSort === s[0] ? " selected" : "") + ">" + esc(s[1]) + "</option>").join("") +
+    "</select></label>" +
     "</div></div>" +
     '<div class="sec-head"><h2>' + esc(storeName(S.store)) + " " + (S.cat ? esc(S.cat) : "全品") + "</h2><span class=\"note\">" + list.length + " 件</span></div>" +
     (list.length ? '<div class="list"><div class="ct" style="background:var(--surface-2)"><div class="muted">商品</div><div class="th">帳簿</div><div class="th">実数</div></div>' + rows + "</div>" : '<div class="empty">商品がありません。</div>') +
@@ -1675,7 +1709,17 @@ document.addEventListener("input", e => {
   }
 });
 /* ズレの理由を選ぶと、備考の文をその場で作る。あとから手で直せる */
-document.addEventListener("change", e => {
+document.addEventListener("change", async e => {
+  if (e.target.id === "countSort") {
+    S.countSort = e.target.value;
+    LS.set("sb.countSort", S.countSort);
+    if (S.countSort === "pos" && !S.posrefList.length) {
+      toast("POSの並び順を読み込んでいます…");
+      try { await ensurePosref(); } catch (err) { toast("読み込めませんでした"); }
+    }
+    apply();
+    return;
+  }
   const sel = e.target.closest && e.target.closest("[data-reason]");
   if (!sel) return;
   const id = sel.dataset.reason;
