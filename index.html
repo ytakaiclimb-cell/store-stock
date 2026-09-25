@@ -756,7 +756,7 @@ function viewCount() {
     '<select data-reason="' + esc(it.id) + '" aria-label="' + esc(it.name) + 'のズレの理由">' +
     REASONS.map(r => '<option value="' + esc(r[0]) + '">' + esc(r[1]) + "</option>").join("") +
     "</select>" +
-    '<input type="text" data-note="' + esc(it.id) + '" placeholder="備考（そのままPOSの備考欄に入ります）">' +
+    '<input type="text" data-note="' + esc(it.id) + '" maxlength="20" placeholder="備考（POSの備考欄にそのまま入ります・20文字まで）">' +
     "</div></div>"
   ).join("");
 
@@ -894,7 +894,9 @@ function viewSettings() {
     "<ol><li>「棚卸」タブで、実際に数えた数を入れて「棚卸を保存」。</li>" +
     "<li>帳簿とのズレはここで直ります。つけ忘れがあっても大丈夫です。</li>" +
     "<li><b>帳簿と数が違うと、その行に「ズレの理由」の欄が出ます。</b>「〇個景品化」などを選ぶと文が入り、" +
-    "手で直せます。ここに入れた文は、POSの形式で書き出したときの<b>備考欄</b>にそのまま入ります。</li></ol>" +
+    "手で直せます。ここに入れた文は、POSの備考欄にそのまま入ります。</li>" +
+    "<li><b>POS側で理由の入力は必須です。</b>数が違う商品は、必ず理由を入れてください。" +
+    "また<b>20文字まで</b>です（超えるとPOSの印刷で切れます）。</li></ol>" +
     "<b style=\"display:block;margin-top:10px\">POSの在庫表で一気に更新する</b>" +
     "<ol><li>POS で「商品在庫表」を<b>その店舗だけ</b>選んでCSVに書き出します。</li>" +
     "<li>この設定タブの「POSの在庫表を取り込む」（または商品タブの「POSから取り込む」）を押します。</li>" +
