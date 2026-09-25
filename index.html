@@ -311,6 +311,7 @@ const S = {
   store: LS.get("sb.store") || "funabashi",
   tab: "stock",
   q: "", cat: "", filter: "active", countAll: false, countSort: LS.get("sb.countSort") || "cat",
+  posPer: LS.get("sb.posPer") || 100,
   who: LS.get("sb.who") || "",
   stock: {}, lastCount: {}
 };
@@ -1288,12 +1289,24 @@ function posEntryRows() {
   });
   return rows.sort((a, b) => a.order - b.order);
 }
+/* POSの一覧での通し番号とページ。ページはPOSの「表示件数」に合わせる */
+const posPer = () => num(S.posPer) || 100;
+const posNo = r => r.order >= 1e9 ? null : r.order + 1;
+const posPage = r => r.order >= 1e9 ? null : Math.floor(r.order / posPer()) + 1;
+
 function posEntryText() {
   const ses = countSessions()[0];
   const rows = posEntryRows();
-  const lines = ["POSに打つ一覧　" + storeName(S.store) + "　" + (ses ? stampLabel(ses.at) : "") + " の棚卸　" + rows.length + "件"];
-  rows.forEach((r, n) => lines.push((n + 1) + ". " + r.name + "　実数 " + fmt(r.qty) + "　備考 " + r.note));
-  lines.push("", "※ ここに無い商品は入力不要（空欄のままでPOSの数字が確定します）");
+  const lines = ["POSに打つ一覧　" + storeName(S.store) + "　" + (ses ? stampLabel(ses.at) : "") + " の棚卸　" +
+    rows.length + "件（POSの表示件数 " + posPer() + " 件のとき）"];
+  let page = null;
+  rows.forEach(r => {
+    const p = posPage(r);
+    if (p !== page) { page = p; lines.push("", "--- " + (p ? p + "ページ目" : "ページ不明") + " ---"); }
+    lines.push((posNo(r) ? "No." + posNo(r) : "No.?") + "　" + r.name + "　実数 " + fmt(r.qty) + "　備考 " + r.note);
+  });
+  lines.push("", "※ ここに無い商品は入力不要（空欄のままでPOSの数字が確定します）",
+    "※ 番号とページは取り込んだPOSの一覧から計算した目安です。商品名で確かめてください");
   return lines.join("\n");
 }
 function posEntryModal() {
@@ -1308,18 +1321,33 @@ function posEntryModal() {
     return;
   }
   const unknown = rows.filter(r => !r.known).length;
+  let lastPage = null;
   const body =
     '<p class="muted">' + esc(stampLabel(ses.at)) + " の棚卸で、帳簿と数が違った <b>" + rows.length + "</b> 件です。" +
     "POSの棚卸画面で、この商品だけ実数と備考を入れてください。<b>ここに無い商品は入力不要</b>です" +
     "（空欄のままでPOSの数字がそのまま確定します）。並びはPOSの一覧と同じ順です。</p>" +
     (unknown ? '<p class="muted" style="color:var(--warn)">' + unknown + " 件はPOSの一覧で見つからなかった商品です。名前が違うかもしれません。</p>" : "") +
-    '<div class="tw"><table><thead><tr><th class="n">#</th><th>商品名（POSでの呼び方）</th><th class="n">実数</th><th>備考</th></tr></thead><tbody>' +
-    rows.map((r, n) =>
-      '<tr><td class="n">' + (n + 1) + '</td><td class="w">' + esc(r.name) +
-      '<div class="muted">帳簿 ' + esc(fmt(r.sys)) + " → 実数 " + esc(fmt(r.qty)) + "</div></td>" +
-      '<td class="n"><b style="font-size:16px">' + esc(fmt(r.qty)) + "</b></td>" +
-      '<td class="w">' + esc(r.note) + "</td></tr>").join("") +
-    "</tbody></table></div>";
+    '<label class="f" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:6px">POSの表示件数' +
+    '<select id="posPer" style="width:auto">' +
+    [10, 25, 50, 100].map(p => '<option value="' + p + '"' + (posPer() === p ? " selected" : "") + ">" + p + " 件</option>").join("") +
+    "</select></label>" +
+    '<div class="tw"><table><thead><tr><th class="n">POSの番号</th><th>商品名（POSでの呼び方）</th><th class="n">実数</th><th>備考</th></tr></thead><tbody>' +
+    rows.map(r => {
+      const p = posPage(r);
+      const head = p !== lastPage
+        ? (lastPage = p, '<tr><td colspan="4" style="background:var(--surface-3);font-weight:700">' +
+            (p ? p + " ページ目" : "ページ不明") + "</td></tr>")
+        : "";
+      return head +
+        '<tr><td class="n"><b>' + (posNo(r) ? "No." + posNo(r) : "-") + "</b></td>" +
+        '<td class="w">' + esc(r.name) +
+        '<div class="muted">帳簿 ' + esc(fmt(r.sys)) + " → 実数 " + esc(fmt(r.qty)) + "</div></td>" +
+        '<td class="n"><b style="font-size:16px">' + esc(fmt(r.qty)) + "</b></td>" +
+        '<td class="w">' + esc(r.note) + "</td></tr>";
+    }).join("") +
+    "</tbody></table></div>" +
+    '<p class="muted">番号とページは、取り込んだPOSの一覧から計算した<b>目安</b>です。' +
+    "POSの一覧に商品が増えていると少しずれます。商品名で確かめてください。</p>";
   openModal("POSに打つ一覧", body,
     '<button class="btn" data-act="copyPosEntry">文字でコピー</button>' +
     '<button class="btn" data-act="csvPosEntry">CSVで書き出す</button>' +
@@ -1791,6 +1819,7 @@ document.addEventListener("input", e => {
 });
 /* ズレの理由を選ぶと、備考の文をその場で作る。あとから手で直せる */
 document.addEventListener("change", async e => {
+  if (e.target.id === "posPer") { S.posPer = num(e.target.value) || 100; LS.set("sb.posPer", String(S.posPer)); posEntryModal(); return; }
   if (e.target.id === "countSort") {
     S.countSort = e.target.value;
     LS.set("sb.countSort", S.countSort);
@@ -1831,8 +1860,8 @@ function stockCSV() {
   return "﻿" + rows.map(csvLine).join("\r\n");
 }
 function posEntryCSV() {
-  const rows = [["No", "商品名(POSでの呼び方)", "実数", "備考", "帳簿", "差"]];
-  posEntryRows().forEach((r, n) => rows.push([n + 1, r.name, r.qty, r.note, r.sys, r.qty - r.sys]));
+  const rows = [["POSの番号", "ページ(" + posPer() + "件表示)", "商品名(POSでの呼び方)", "実数", "備考", "帳簿", "差"]];
+  posEntryRows().forEach(r => rows.push([posNo(r) || "", posPage(r) || "", r.name, r.qty, r.note, r.sys, r.qty - r.sys]));
   return "﻿" + rows.map(csvLine).join("\r\n");
 }
 function chainCSV() {
