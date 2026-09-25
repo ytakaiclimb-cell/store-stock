@@ -446,7 +446,45 @@ async function boot() {
   catch (e) { APPKEY = ""; LS.set("sb.key", ""); askKey("合言葉が違うか、つながりませんでした。"); }
 }
 /* 他の端末の変更を拾うため、戻ってきたときと1分おきに読み直す */
-const refresh = () => { if (!document.hidden && APPKEY && S.ready && !modalEl) reloadAll().catch(() => {}); };
+/* 棚卸の入力中は、この端末に下書きとして自動で残す。
+   画面の読み直しやアプリの切り替えで消えないようにするため */
+const draftKey = () => "sb.draft." + S.store;
+/* メモリに持ちつつ、端末にも残す。localStorage が使えない環境でも効くように */
+let DRAFT = null;
+function readDraft() {
+  if (!DRAFT) { try { DRAFT = JSON.parse(LS.get(draftKey()) || "{}"); } catch (e) { DRAFT = {}; } }
+  return DRAFT;
+}
+function saveDraft() {
+  const m = {};
+  document.querySelectorAll("[data-count]").forEach(i => {
+    if (i.value !== "") (m[i.dataset.count] = m[i.dataset.count] || {}).qty = i.value;
+  });
+  document.querySelectorAll("[data-note]").forEach(i => {
+    if (i.value !== "" && m[i.dataset.note]) m[i.dataset.note].note = i.value;
+  });
+  DRAFT = m;
+  LS.set(draftKey(), JSON.stringify(m));
+  return m;
+}
+function clearDraft() { DRAFT = {}; LS.set(draftKey(), "{}"); }
+function restoreDraft() {
+  const m = readDraft();
+  Object.keys(m).forEach(id => {
+    const q = document.querySelector('[data-count="' + id + '"]');
+    if (q && m[id].qty != null) { q.value = m[id].qty; q.dispatchEvent(new Event("input", { bubbles: true })); }
+    const n = document.querySelector('[data-note="' + id + '"]');
+    if (n && m[id].note != null) n.value = m[id].note;
+  });
+}
+const draftCount = () => Object.keys(readDraft()).length;
+
+/* 入力中は読み直さない（打った数字が消えるため） */
+const refresh = () => {
+  if (document.hidden || !APPKEY || !S.ready || modalEl) return;
+  if (S.tab === "count" && draftCount()) return;
+  reloadAll().catch(() => {});
+};
 setInterval(refresh, 60000);
 document.addEventListener("visibilitychange", refresh);
 
@@ -571,6 +609,7 @@ function render() {
     ? { stock: viewChain, items: viewChain, move: chainNote, count: chainNote, order: chainNote, settings: viewSettings }
     : { stock: viewStock, move: viewMove, count: viewCount, order: viewOrder, items: viewItems, settings: viewSettings };
   v.innerHTML = (views[S.tab] || views.stock)();
+  if (S.tab === "count" && !isChain()) { restoreDraft(); updateDraftNote(); }
 }
 
 /* ---------- 在庫 ---------- */
@@ -771,6 +810,7 @@ function viewCount() {
     '<div class="sec-head"><h2>' + esc(storeName(S.store)) + " " + (S.cat ? esc(S.cat) : "全品") + "</h2><span class=\"note\">" + list.length + " 件</span></div>" +
     (list.length ? '<div class="list"><div class="ct" style="background:var(--surface-2)"><div class="muted">商品</div><div class="th">帳簿</div><div class="th">実数</div></div>' + rows + "</div>" : '<div class="empty">商品がありません。</div>') +
     '<div class="card" style="margin-top:14px">' +
+    '<p class="muted" data-draft-note style="margin-bottom:10px"></p>' +
     '<label class="row" style="gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="prune" style="width:auto"> 棚卸より前の入出庫の記録を消す（在庫数は変わりません。保存できる件数を節約できます）</label>' +
     '<div class="row" style="margin-top:12px"><button class="btn primary" data-act="saveCount">棚卸を保存</button>' +
     '<button class="btn" data-act="exportPos">POSの形式で書き出す</button>' +
@@ -1409,11 +1449,16 @@ document.addEventListener("click", async (e) => {
   if (!b) return;
   const act = b.dataset.act, id = b.dataset.id;
 
-  if (act === "store") { S.store = id; LS.set("sb.store", id); apply(); if (id === "chain") ensureChain().catch(e => toast(e.message)); return; }
+  if (act === "store") { S.store = id; DRAFT = null; LS.set("sb.store", id); apply(); if (id === "chain") ensureChain().catch(e => toast(e.message)); return; }
   if (act === "tab") { S.tab = id; apply(); return; }
   if (act === "cat") { S.cat = id; apply(); return; }
   if (act === "filter") { S.filter = id; apply(); return; }
   if (act === "countAll") { S.countAll = !S.countAll; apply(); return; }
+  if (act === "dropDraft") {
+    if (!await askConfirm("入力中の " + draftCount() + " 件を捨てます。保存していないので元に戻せません。", "捨てる", true)) return;
+    clearDraft(); apply(); toast("入力を捨てました");
+    return;
+  }
   if (act === "closeModal") { closeModal(); return; }
   if (act === "newItem") { itemModal(null); return; }
   if (act === "edit") { itemModal(id); return; }
@@ -1526,6 +1571,7 @@ document.addEventListener("click", async (e) => {
         for (const m of S.moves.filter(m => m.itemId === itemId && String(m.at) <= at)) { await del("moves", m.id); pruned++; }
       }
     }
+    clearDraft();
     toast("棚卸を保存しました（" + inputs.length + "件・ズレ " + diffCount + "件" + (pruned ? " / 記録 " + pruned + "件を整理" : "") + "）");
     apply();
     return;
@@ -1596,8 +1642,22 @@ document.addEventListener("click", async (e) => {
   if (act === "csvChain") { await saveCSV(chainCSV(), "全店の在庫_" + new Date().toISOString().slice(0, 10) + ".csv"); return; }
 });
 
+let draftTimer = null;
+function scheduleDraftSave() { clearTimeout(draftTimer); draftTimer = setTimeout(() => { saveDraft(); updateDraftNote(); }, 400); }
+/* 「入力中 ◯件」の表示だけ、画面を作り直さずに書き換える */
+function updateDraftNote() {
+  const el = document.querySelector("[data-draft-note]");
+  if (!el) return;
+  const n = draftCount();
+  el.innerHTML = n
+    ? "入力中 <b>" + n + "</b> 件。この端末に自動で残しているので、画面を閉じても消えません。" +
+      ' <button class="btn ghost sm" data-act="dropDraft">入力を捨てる</button>'
+    : "実数を入れると、この端末に自動で残ります。画面を閉じても消えません。";
+}
+
 document.addEventListener("input", e => {
   if (e.target.id === "q") { S.q = e.target.value; const p = document.activeElement; recompute(); render(); const n = $("#q"); if (n && p && p.id === "q") { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } return; }
+  if (e.target.dataset && (e.target.dataset.count || e.target.dataset.note)) scheduleDraftSave();
   if (e.target.dataset && e.target.dataset.count) {
     const it = itemById(e.target.dataset.count);
     const d = document.querySelector('[data-diff="' + e.target.dataset.count + '"]');
@@ -1626,6 +1686,7 @@ document.addEventListener("change", e => {
   const diff = num(qty.value) - stockOf(it);
   const t = reasonText(sel.value, diff);
   if (t) inp.value = t;
+  scheduleDraftSave();
   inp.focus();
   if (sel.value === "miss") { const at = inp.value.indexOf("〇〇"); if (at >= 0) inp.setSelectionRange(at, at + 2); }
 });
