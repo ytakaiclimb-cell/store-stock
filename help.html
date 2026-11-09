@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f6f6a">
+<meta name="robots" content="noindex,nofollow">
+<title>使い方 - 店舗の在庫ボード</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#eef2f1; --surface:#ffffff; --surface-2:#f5f8f7; --surface-3:#e6edeb;
+  --line:#dbe4e2; --line-2:#c2cfcc;
+  --ink:#101a19; --ink-2:#4c5a58; --ink-3:#7b8a87;
+  --accent:#0f6f6a; --accent-ink:#0b5450; --accent-soft:#dff0ed;
+  --crit:#c1372c; --crit-soft:#fbe7e4; --warn:#c07208; --warn-soft:#fbeed9;
+  --font:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono","Zen Kaku Gothic New",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg:#0b1211; --surface:#151d1c; --surface-2:#1a2322; --surface-3:#212c2a;
+    --line:#243030; --line-2:#374644;
+    --ink:#ecf2f1; --ink-2:#a6b4b1; --ink-3:#7b8a87;
+    --accent:#4bb3ab; --accent-ink:#7fd0c9; --accent-soft:#12302e;
+    --crit:#e8756a; --crit-soft:#331a18; --warn:#e2a03f; --warn-soft:#312512;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.85;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 80px}
+header.top{background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top-in{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.top-in h1{margin:0;font-size:18px}
+.top-in .sub{color:var(--ink-3);font-size:11px;letter-spacing:.14em;font-family:var(--mono);text-transform:uppercase}
+.top-in a{margin-left:auto;font-size:13px;color:var(--accent-ink)}
+h2{font-size:19px;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--accent);scroll-margin-top:60px}
+h3{font-size:15.5px;margin:22px 0 6px;scroll-margin-top:60px}
+p{margin:0 0 10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
+.toc ol{margin:6px 0 0;padding-left:1.4em}
+.toc a{color:var(--accent-ink);text-decoration:none}
+.toc li{margin-bottom:2px}
+ol,ul{padding-left:1.4em;margin:6px 0 12px}
+li{margin-bottom:5px}
+b{color:var(--ink)}
+.btnname{display:inline-block;background:var(--surface-3);border:1px solid var(--line-2);border-radius:999px;padding:0 10px;font-size:13px;font-weight:700;white-space:nowrap}
+.tab{display:inline-block;background:var(--ink);color:var(--bg);border-radius:6px;padding:0 8px;font-size:13px;font-weight:700}
+.note{background:var(--accent-soft);border-radius:8px;padding:9px 13px;margin:10px 0;color:var(--accent-ink);font-size:14px}
+.warn{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:8px;padding:9px 13px;margin:10px 0;font-size:14px}
+.crit{background:var(--crit-soft);border-left:4px solid var(--crit);border-radius:8px;padding:9px 13px;margin:10px 0;font-size:14px}
+.term{color:var(--ink-2);font-size:13px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface);border:1px solid var(--line)}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface-2);font-size:12.5px;color:var(--ink-2)}
+.tw{overflow-x:auto;border-radius:8px;margin:10px 0}
+code{font-family:var(--mono);font-size:13px;background:var(--surface-3);padding:0 5px;border-radius:4px;overflow-wrap:anywhere}
+footer{margin-top:40px;color:var(--ink-3);font-size:12.5px}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><h1>店舗の在庫ボード　使い方</h1><span class="sub">manual</span><a href="./">アプリを開く</a></div></header>
+<main class="wrap">
+
+<p>船橋・八千代の物販や備品の在庫を、スマホで記録するアプリの説明書です。店長本人と、あとから引き継ぐ人に向けて書いています。むずかしい言葉は、そのつど一言で説明します。</p>
+
+<nav class="card toc" aria-label="目次">
+<b>目次</b>
+<ol>
+<li><a href="#intro">はじめに</a></li>
+<li><a href="#screen">画面の見方</a></li>
+<li><a href="#daily">日常の使い方（入荷・出庫の記録）</a></li>
+<li><a href="#count">棚卸の手順</a></li>
+<li><a href="#import">POSからの取り込み</a></li>
+<li><a href="#logic">在庫数の考え方</a></li>
+<li><a href="#caution">注意点・ハマりどころ</a></li>
+<li><a href="#trouble">困ったときは</a></li>
+</ol>
+</nav>
+
+<h2 id="intro">1. はじめに</h2>
+<p>このアプリは、<b>お店にある物が「いま何個あるか」を記録して、足りなくなったら教えてくれる</b>ものです。物販（チョークやウェアなど）、消耗品、レンタル品を扱います。</p>
+<ul>
+<li>船橋と八千代の2店舗を、画面の上のボタンで切り替えます。</li>
+<li>データはインターネット上に保存されます（Supabase：データを預けておくクラウドのサービス）。スマホとパソコンで同じ数字が見えます。</li>
+<li>POS（お店のレジ・在庫システム）とは別のものです。POSには、このアプリの数字を見ながら人が入力します。</li>
+</ul>
+
+<h3>スマホでの開き方</h3>
+<ol>
+<li>スマホのブラウザ（iPhoneならSafari、AndroidならChrome）を開きます。</li>
+<li>アドレス欄に <code>https://ytakaiclimb-cell.github.io/store-stock/</code> を入れて開きます。</li>
+</ol>
+
+<h3>ホーム画面に追加する（アプリのように1タップで開く）</h3>
+<ul>
+<li><b>iPhone（Safari）</b>：画面下の共有ボタン（四角から矢印が出たマーク）→「ホーム画面に追加」→「追加」。</li>
+<li><b>Android（Chrome）</b>：右上の「︙」→「ホーム画面に追加」（または「アプリをインストール」）。</li>
+</ul>
+<p>ホーム画面に「在庫ボード」というアイコンができます。次からはそれを押せば開きます。</p>
+
+<h3>合言葉を入力する</h3>
+<p>初めて開くと「合言葉を入れてください」という画面が出ます。<b>お店で決めた合言葉</b>を入れて「開く」を押します（合言葉はこの説明書には書いていません。店長か引き継ぎ資料で確認してください）。一度入れると、<b>その端末では次から聞かれません</b>。</p>
+<div class="note">合言葉が違うと、もう一度入力を求められます。大文字・小文字や空白に気をつけてください。</div>
+
+<h2 id="screen">2. 画面の見方</h2>
+<p>画面の一番上に<b>店舗の切り替えボタン</b>（船橋／八千代／全店）、その下に<b>タブ</b>（画面の切り替え）が並びます。タブは横にスワイプ（指で滑らせる）すると隠れた分も出ます。</p>
+<div class="tw"><table>
+<thead><tr><th>タブ</th><th>何をするところか</th></tr></thead>
+<tbody>
+<tr><td><span class="tab">在庫</span></td><td>いまの在庫の一覧。上に「欠品」「発注どき」「取扱中の品目」「在庫金額」の4つの数字。商品名や仕入先で検索できます。各行の <b>−</b>（使った）、<b>＋</b>（届いた）ですぐ記録、「詳細」でその商品の履歴が見られます。</td></tr>
+<tr><td><span class="tab">入出庫</span></td><td>入荷・使用・廃棄・戻しを1件ずつ記録する画面。下に最近の記録が40件並び、間違えたら「取消」できます。</td></tr>
+<tr><td><span class="tab">棚卸</span></td><td>実際に数えた数を入れて、帳簿（アプリ上の数）とのズレを直す画面。POSに打つ一覧もここから出します。</td></tr>
+<tr><td><span class="tab">発注</span></td><td>在庫が「発注点」（これ以下になったら注文する数）以下の商品が、仕入先ごとに並びます。「文字でコピー」でLINEやメールに貼れます。「CSVで書き出す」も可。</td></tr>
+<tr><td><span class="tab">商品</span></td><td>商品の登録・編集の画面。「商品を追加」「まとめて登録」「POSから取り込む」ボタンがあります。</td></tr>
+<tr><td><span class="tab">設定</span></td><td>記録する人の名前、上に出す店舗、カテゴリ、POSの在庫表の取り込み、CSV書き出し、保存したファイル、合言葉の消去、使い方（この説明書へのリンク）。</td></tr>
+</tbody></table></div>
+<p class="term">CSV：エクセルで開ける、表の形のファイルのことです。</p>
+
+<h3>「全店」は見るだけ</h3>
+<p>上のボタンで「全店」を選ぶと、チェーン25店舗の合計在庫が見られます。<b>見るだけの欄</b>で、入出庫・棚卸・発注はできません（押すと「全店では使えません」と案内が出ます）。日常の記録は必ず<b>船橋か八千代</b>に切り替えてから行ってください。</p>
+
+<h3>商品の色・ラベルの意味</h3>
+<ul>
+<li><b>欠品</b>（赤）：在庫が0以下。</li>
+<li><b>発注どき</b>（オレンジ）：在庫が発注点以下。</li>
+<li><b>多い</b>（青）：適正在庫の1.6倍より多い。</li>
+<li>ラベルなし：適正。</li>
+<li><b>未使用</b>：棚卸も入出庫も一度も記録していない商品。POSに登録だけある商品で、在庫0でも欠品扱いにならず、発注リストにも出ません。</li>
+</ul>
+
+<h2 id="daily">3. 日常の使い方（入荷・出庫の記録）</h2>
+<p>届いた、使った、捨てた、をその場で記録します。つけ忘れても、あとの棚卸で数を合わせられるので大丈夫です。</p>
+
+<h3>いちばん簡単な方法（在庫タブから）</h3>
+<ol>
+<li>上で店舗（船橋／八千代）を選ぶ。</li>
+<li><span class="tab">在庫</span>タブを開く。</li>
+<li>商品の行の右にある <b>＋</b>（届いた）または <b>−</b>（使った）を押す。</li>
+<li>出てきた画面で数量を入れる（<b>−</b>／<b>＋</b>のボタンで1ずつ増減もできる）。メモは任意（例：納品した会社名）。</li>
+<li><span class="btnname">記録する</span>を押す。画面に「12 → 24」のように変化が先に出るので、確認してから押せます。</li>
+</ol>
+
+<h3>種別を選んで記録する（入出庫タブから）</h3>
+<ol>
+<li><span class="tab">入出庫</span>タブを開く。</li>
+<li>4つのボタンから選ぶ：<span class="btnname">入荷を記録</span>（＋）／<span class="btnname">使用・出庫を記録</span>（−）／<span class="btnname">廃棄・破損を記録</span>（−）／<span class="btnname">戻し・返品を記録</span>（＋）。</li>
+<li>商品を選び、数量とメモを入れて<span class="btnname">記録する</span>を押す。</li>
+</ol>
+
+<h3>記録を間違えたとき</h3>
+<p><span class="tab">入出庫</span>タブの「最近の記録」で、その行の右の「取消」を押し、確認画面で「取り消す」を押します。取り消すと元に戻せないので、あらためて正しく記録し直してください。</p>
+
+<h3>新しい商品を登録する</h3>
+<ol>
+<li><span class="tab">商品</span>タブ →<span class="btnname">商品を追加</span>。</li>
+<li>商品名、単位、<b>発注点</b>、<b>適正在庫</b>（いつも持っておきたい数）、仕入先などを入れる。</li>
+<li>「はじめの在庫数」にいま棚にある数を入れて「保存」。</li>
+</ol>
+<div class="note">発注点を入れると、「未使用」だった商品も見張りが始まります。両店で同じ商品を持つときは、商品の編集画面の「他店にコピー」が使えます。</div>
+
+<h2 id="count">4. 棚卸の手順（いちばん大事）</h2>
+<p class="term">棚卸（たなおろし）：棚にある物を実際に数えて、帳簿（アプリ上の数）と合っているか確認すること。</p>
+<p>アプリで実数を入れて保存し、ズレた商品だけをPOSに入力する、という流れです。POSには棚卸データを流し込む機能がないため、<b>POSへの入力は人の手</b>になります。ただしPOSは、<b>入力しなかった商品は現在の在庫数がそのまま入る</b>ので、ズレた商品だけ打てば足ります。</p>
+
+<h3>全体の流れ</h3>
+<ol>
+<li><b>アプリで実数を入力する</b>（<span class="tab">棚卸</span>タブ）</li>
+<li><b>「棚卸を保存」を1回だけ押す</b></li>
+<li><b>「POSに打つ一覧」を見ながら、POSに入力する</b></li>
+<li>POSで承認依頼・承認まで済ませる</li>
+<li>必要なら<b>CSVで書き出す</b>（記録として残す・提出する）</li>
+</ol>
+
+<h3>手順の詳細</h3>
+<ol>
+<li>上の切り替えで<b>棚卸する店舗</b>を選ぶ。（全店では棚卸できません）</li>
+<li><span class="tab">棚卸</span>タブを開く。</li>
+<li>見やすい並びを選ぶ。「並び順」で、カテゴリ順／商品名順／<b>POSの棚卸リストと同じ順</b>／在庫の多い順／仕入先順 を選べます。棚を回る順に近いものを選ぶと数えやすくなります。カテゴリのボタンで絞り込むこともできます。</li>
+<li>各商品の「実数」欄に、<b>実際に数えた数</b>を入れる。左の「帳簿」はアプリ上の数です。入れるとすぐ下に「+2」「−3」「ぴったり」と差が出ます。<b>空欄の商品は変更されません</b>（数えなかった商品はそのまま）。</li>
+<li>帳簿と数が違う行には、<b>「ズレの理由」</b>の欄が開きます（次の「備考欄の使い分け」を見てください）。</li>
+<li>入力が終わったら、一番下の<span class="btnname">棚卸を保存</span>を<b>1回だけ</b>押す。ボタンが「保存中…」になっている間は待ちます。</li>
+<li>保存が終わると、ズレがあれば自動で<b>「POSに打つ一覧」</b>が開きます。（あとから開き直すときは、棚卸タブ下の<span class="btnname">POSに打つ一覧</span>を押します）</li>
+<li>一覧の「POSの番号」「商品名」「実数」「備考」を見ながら、POSの棚卸画面で入力する。一覧は<b>POSの並びと同じ順</b>で、ページごとに区切ってあります。<span class="btnname">文字でコピー</span>・<span class="btnname">CSVで書き出す</span>で別の画面やメモに持ち出せます。</li>
+<li>POSの入力が終わったら、POSの手順で承認依頼→承認をする。</li>
+<li>提出用などでPOSと同じ形のファイルが要るときは、<span class="btnname">POSの形式で書き出す</span>を押す。書き出す棚卸を選び、店舗名（POSでの呼び方）・完了日・作業者・承認者などを確認して<span class="btnname">書き出す</span>。POSの棚卸リストと同じ形（Shift-JISという古い文字コード）のCSVが保存されます。</li>
+</ol>
+
+<div class="note"><b>POS側の場所</b>：すべてのアプリ → 商品管理 → 在庫管理 → 店舗を選ぶ →「棚卸開始」（途中なら「棚卸再開」）。手順は ①棚卸リスト印刷 ②棚卸の入力 ③承認依頼 ④承認 の4つ。Tabキーで次の商品へ移れます。</div>
+
+<h3>備考欄の理由の使い分け</h3>
+<p>帳簿と実数が違う商品には、「ズレの理由」の選択肢と「備考」欄が出ます。ここに入れた文は、<b>POSの備考欄にそのまま入ります</b>。POSでは、数が違う商品の備考は<b>必須</b>で、<b>全角20文字以内</b>です（アプリの備考欄も20文字までしか入りません）。選ぶと文が自動で入り、あとから手で直せます。</p>
+<div class="tw"><table>
+<thead><tr><th>選ぶもの</th><th>入る文</th><th>使う場面</th></tr></thead>
+<tbody>
+<tr><td>〇〇と打ち間違い</td><td>〇〇と打ち間違い</td><td>以前のPOS入力や記録の数字を間違えていたとき。「〇〇」の部分が選択状態になるので、前の数字などに書き換えます。</td></tr>
+<tr><td>〇個景品化</td><td>例：3個景品化</td><td>お客様へのプレゼント・景品にした分。個数は差から自動で入ります。</td></tr>
+<tr><td>〇個備品化</td><td>例：3個備品化</td><td>店で使う備品にした分（売り物でなくなった）。個数は自動。</td></tr>
+<tr><td>他店舗ローリング</td><td>他店舗ローリング</td><td>他の店舗との間で商品を移したとき。店名がわかれば、手で書き足すと親切です（例：津田沼店よりローリング）。</td></tr>
+<tr><td>原因不明</td><td>原因不明</td><td>理由が思い当たらないとき。ほかの理由で説明できるなら、そちらを優先します。</td></tr>
+</tbody></table></div>
+<p>理由欄は<b>差が0でないときだけ</b>出ます。数を入れ直して差が0になれば閉じ、保存時も備考は空になります。</p>
+
+<h3>便利な機能</h3>
+<ul>
+<li><b>未使用の商品も出す</b>：棚卸画面は通常、未使用の商品を出しません。出したいときはこのボタン。</li>
+<li><b>棚卸より前の入出庫の記録を消す</b>（チェックボックス）：古い記録を片づけて、保存できる件数を節約します。在庫数は変わりません。よくわからなければチェックしなくて構いません。</li>
+</ul>
+
+<h2 id="import">5. POSからの取り込み</h2>
+<p>POSの「商品在庫表」を書き出したCSVを読み込んで、アプリの在庫数を一気にPOSに合わせる機能です。商品を最初に入れるときや、アプリの数がPOSとかけ離れたときに使います。</p>
+<ol>
+<li>POSで「商品在庫表」を、<b>取り込みたい店舗だけ</b>選んでCSVに書き出す。（全店で書き出したものは使わないでください）</li>
+<li>アプリの上で、取り込む店舗（船橋／八千代）を選ぶ。</li>
+<li><span class="tab">設定</span>タブの<span class="btnname">POSの在庫表を取り込む</span>を押す（<span class="tab">商品</span>タブの<span class="btnname">POSから取り込む</span>でも同じ）。</li>
+<li>「CSVファイル」の欄でファイルを選ぶ。（エクセルやメモ帳の中身を貼り付けて取り込むこともできます）</li>
+<li>画面に<b>プレビュー</b>が出る：「在庫が変わる／変わらない／新しく登録／CSVに無い」の件数と、変わる商品の一覧。<b>ここで中身を確認します。</b></li>
+<li>納得したら<span class="btnname">この内容で取り込む</span>を押す。取り込み中は「取り込み中… 3/17」のように進み、終わると画面に件数が出ます。</li>
+</ol>
+<ul>
+<li>商品名で照らし合わせます（全角・半角の違いは吸収します）。</li>
+<li>CSVにしか無い商品は<b>新しく登録</b>します。CSVに無い商品は<b>そのまま残します</b>（消しません）。</li>
+<li>取り込むと、在庫が違う商品に「棚卸」と同じ扱いの記録が1件入ります。それより前の入出庫の記録は数に影響しなくなります。</li>
+</ul>
+<div class="warn">1,000件を超えると「全店の在庫表ではありませんか？」と警告が出ます。全店の合計を店舗の在庫に取り込むと数字が合わなくなるので、<b>その場合は取り込まずにやめて</b>、店舗を選んで書き出し直してください。</div>
+<div class="note">「この内容で取り込む」が押せないときは、変わる商品も新しい商品もない（すでにPOSと同じ）か、CSVの形が合っていません。「商品名」と「在庫数」の列があるか確認してください。</div>
+
+<h2 id="logic">6. 在庫数の考え方</h2>
+<p>このアプリでは、<b>在庫数を直接書き換えることができません</b>。「在庫」タブの数字をタップして直す、という操作がないのはそのためです。理由は次のとおりです。</p>
+
+<div class="card">
+<p><b>たとえるなら「家計簿の残高」です。</b></p>
+<p>月初に財布の中身を数えて「5万円ありました」と書き（これが<b>棚卸</b>）、その後は「ランチ −800円」「給料 +20万円」と<b>出入りだけを書き足して</b>いきます（これが<b>入出庫</b>）。いまの残高は書いておらず、「5万円＋その後の出入り」を<b>見るたびに計算</b>しています。</p>
+</div>
+
+<p>アプリも同じで、</p>
+<p><b>いまの在庫数 ＝ 最新の棚卸の数 ＋ それ以降の入出庫の合計</b></p>
+<p>を、毎回計算して出しています（入荷と戻しは足し算、使用と廃棄は引き算）。</p>
+
+<h3>こうなっている理由</h3>
+<ul>
+<li><b>履歴が残る</b>：数字だけを上書きすると、いつ・なぜ変わったかが消えます。出入りが全部残っていれば、間違いも追えます。</li>
+<li><b>つけ忘れても直せる</b>：記録漏れがあってズレても、棚卸で実数を入れれば、そこが新しい出発点になってリセットされます。</li>
+<li><b>二人で同時に使っても壊れにくい</b>：「在庫を12にする」と上書きし合うと片方が消えますが、「+3」「−1」の記録なら両方残ります。</li>
+</ul>
+
+<h3>数を直したいときは</h3>
+<ul>
+<li>直近の記録が間違い → <span class="tab">入出庫</span>タブで「取消」して、正しく記録し直す。</li>
+<li>いつの間にかズレた → <span class="tab">棚卸</span>タブで、数えた実数を入れて保存。</li>
+<li>POSの数に合わせたい → 「POSの在庫表を取り込む」。</li>
+</ul>
+
+<h2 id="caution">7. 注意点・ハマりどころ</h2>
+
+<div class="crit"><b>棚卸の保存ボタンは二重押ししない。</b><br>
+保存には少し時間がかかります。連打すると、同じ内容が何度も保存されます。2回目以降は「帳簿の数」がすでに実数に更新されているため、<b>ズレが消えて「ズレ0件」に見えてしまい</b>、POSに打つ一覧が空になることがあります（実際に一度起きました）。アプリ側で二重押しを防ぐ仕組みと、5分以内の連続保存を1回とみなす救済も入れていますが、<b>押したら「保存中…」が消えるまで待つ</b>のが基本です。</div>
+
+<div class="warn"><b>POSに打つとき、ページ番号のズレに注意。</b><br>
+「POSに打つ一覧」の番号（No.）とページは、<b>POSの全商品リストでの通し番号</b>です（ズレた商品だけの連番ではありません）。たとえば「No.3113」は、POSの棚卸リストの3113番目の商品、という意味です。
+<ul>
+<li>ページ数は、<b>POSの「表示件数」</b>（1ページに何件出すか）で変わります。一覧の上の「POSの表示件数」を、POSの画面と<b>同じ件数に合わせて</b>ください（10／25／50／100件）。</li>
+<li>番号とページは、アプリに取り込んである「POSの一覧」から計算した<b>目安</b>です。POSで商品が増えていると、後ろのほうが1ページずれることがあります（実際に、一覧が古くて5件を飛ばしたことがあります）。<b>必ず商品名で確かめて</b>から入力してください。</li>
+<li>同じ種類の商品が連続して並んでいる所は、ページの切り替わりで飛ばしやすいです。入力したものに印をつけながら進めると安全です。</li>
+<li>「POSの一覧で見つからなかった商品」という注意が出たら、名前が違う可能性があります。</li>
+</ul></div>
+
+<div class="warn"><b>入力中の下書きは自動保存されるが、保存ボタンは必ず押す。</b><br>
+棚卸の入力中は、数字と備考がこの端末に自動で残ります（画面を閉じても、他のアプリに切り替えても消えません）。棚卸タブに「入力中 〇件」と出ます。<b>ただし、これはあくまで下書きです。「棚卸を保存」を押すまでアプリの在庫数は変わらず、他の端末からも見えません。</b>入力が終わったら必ず保存してください。
+<ul>
+<li>下書きは<b>この端末・この店舗ごと</b>に残ります。別のスマホには引き継がれません。</li>
+<li>下書きをやり直したいときは「入力を捨てる」。捨てると元に戻せません。</li>
+<li>入力中は、他の端末の変更を拾う自動の読み直しが止まります。</li>
+</ul></div>
+
+<div class="warn"><b>差が出た行には、備考を必ず入れる。</b><br>
+POS側では、数が違う商品の備考が必須で、全角20文字までです。アプリは備考なしでも保存できますが、POSに入力するときに困ります。</div>
+
+<div class="warn"><b>入力しなかった商品は変わらない。</b><br>
+空欄のまま保存すれば、その商品は触られません。「0個だった」場合は、<b>空欄ではなく「0」</b>と入れてください。</div>
+
+<ul>
+<li><b>全店では何もできない</b>：必ず船橋か八千代に切り替えてから。</li>
+<li><b>全店のCSVを店舗に取り込まない</b>：数字が合わなくなります（1,000件超で警告が出ます）。</li>
+<li><b>削除は元に戻せない</b>：商品を削除すると、その商品の入出庫・棚卸の記録も一緒に消えます。「取消」「入力を捨てる」「古い入出庫を整理する」も同様です。確認画面をよく読んでから押してください。</li>
+<li><b>「記録する人」の名前を設定する</b>（<span class="tab">設定</span>タブ）：誰が記録したかが残ります。この端末だけの設定です。</li>
+<li><b>共用のパソコンで使ったあと</b>は、設定タブの「この端末の合言葉を消す」を押す。</li>
+<li><b>他の端末の変更</b>は、アプリを開き直したときと1分おきに読み直されます（棚卸の入力中は読み直しません）。</li>
+<li><b>アプリのソースの置き場所（GitHub）は公開</b>されています。合言葉や在庫データは公開側には入っていませんが、<b>合言葉を他人に教えない</b>でください。</li>
+</ul>
+
+<h2 id="trouble">8. 困ったときは</h2>
+
+<h3>数が合わない（アプリの在庫がPOSや実数と違う）</h3>
+<ol>
+<li>まず<span class="tab">入出庫</span>タブの「最近の記録」を見て、間違った記録や二重の記録がないか確認する。あれば「取消」。</li>
+<li>それでも合わなければ、<span class="tab">棚卸</span>タブで実数を入れて保存する。そこが新しい出発点になります。</li>
+<li>POSの数に合わせたいときは、「POSの在庫表を取り込む」（5章）。</li>
+<li>在庫が<b>マイナス</b>の商品は、入庫の記録漏れが多いです。箱を開けて1つずつ売る商品（サプリのバラなど）は、箱からバラへの振り替えを記録していないと、バラがマイナスになります。棚卸で実数を入れれば直ります。</li>
+</ol>
+
+<h3>画面が真っ白になる／何も表示されない</h3>
+<ol>
+<li>ネットにつながっているか確認する（電波の良いところで開く）。「つながっていません」と出ているときも同じです。</li>
+<li>ブラウザで更新（再読み込み）する。ホーム画面から開いている場合は、アプリを一度完全に閉じて開き直す。</li>
+<li>それでも直らなければ、ブラウザで <code>https://ytakaiclimb-cell.github.io/store-stock/</code> を直接開いてみる。</li>
+<li>入力中だった棚卸は、下書きがこの端末に残っているので、開き直すと復元されます。</li>
+</ol>
+
+<h3>合言葉を忘れた／合言葉が通らない</h3>
+<ul>
+<li>合言葉は、この説明書にもアプリにも書かれていません。<b>店長に聞くか、店で管理している資料を確認</b>してください。</li>
+<li>すでに別のスマホで開けているなら、そのスマホは覚えているので使い続けられます（その画面から合言葉は見えません）。</li>
+<li>「合言葉が違うか、つながりませんでした」と出る場合は、入力の間違いのほか、ネットにつながっていない可能性もあります。電波を確認してもう一度。</li>
+<li>合言葉を変えたあとは、すべての端末で設定タブの「この端末の合言葉を消す」→新しい合言葉を入れ直してください。</li>
+</ul>
+
+<h3>棚卸を保存したのに「POSに打つ一覧」が空／ズレ0件</h3>
+<p>保存ボタンを複数回押した可能性があります。アプリは5分以内の連続保存を1回とみなして最初の記録を採りますが、それでも空なら、本当にズレがなかった可能性もあります。出ているメッセージ（「帳簿と数が違う商品はありませんでした」など）を読んでください。</p>
+
+<h3>POS取り込みで「列が見つかりませんでした」と出る</h3>
+<p>「商品名」と「在庫数」の列があるCSVが必要です。POSの「商品在庫表」を書き出したものか、確認してください。</p>
+
+<h3>それでも解決しないとき</h3>
+<p>何をしようとして、画面にどう出たか（メッセージ文）をメモして、アプリを作った担当（Claude）に伝えてください。画面の写真があると早いです。</p>
+
+<footer>店舗の在庫ボード　使い方（2026-11-09 版）　/　<a href="./" style="color:var(--accent-ink)">アプリを開く</a></footer>
+</main>
+</body>
+</html>
